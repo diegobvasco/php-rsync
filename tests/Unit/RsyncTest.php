@@ -94,6 +94,7 @@ it('deletes files in destination not present in source', function (): void {
 
     $result = new Rsync()
         ->copy($this->sourceDir, $this->destDir)
+        ->delete()
         ->run();
 
     expect($result->deletedCount())->toBe(1)
@@ -211,6 +212,7 @@ it('removes empty directories after sync', function (): void {
 
     $result = new Rsync()
         ->copy($this->sourceDir, $this->destDir)
+        ->delete()
         ->run();
 
     expect(is_dir($this->destDir.'/old_empty_dir'))->toBeFalse();
@@ -289,6 +291,7 @@ it('preserves existing destination files not in source', function (): void {
 
     $result = new Rsync()
         ->copy($this->sourceDir, $this->destDir)
+        ->delete()
         ->run();
 
     expect(file_exists($this->destDir.'/existing.txt'))->toBeFalse();
@@ -341,4 +344,658 @@ it('handles non-file path in delete operation', function (): void {
 
     // Directory should be cleaned up by empty directory removal
     expect(is_dir($this->destDir.'/orphan_dir'))->toBeFalse();
+});
+
+// ─── toCommand() Tests ───────────────────────────────────────────
+
+it('generates basic rsync command', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->toCommand();
+
+    expect($command)->toBe("rsync '/src' '/dest'");
+});
+
+it('generates command with delete flag', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->delete()
+        ->toCommand();
+
+    expect($command)->toContain('--delete')
+        ->and($command)->toContain("'/src' '/dest'");
+});
+
+it('generates command with archive flag', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->archive()
+        ->toCommand();
+
+    expect($command)->toContain('--archive');
+});
+
+it('generates command with multiple flags', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->delete()
+        ->verbose()
+        ->recursive()
+        ->toCommand();
+
+    expect($command)->toContain('--delete')
+        ->and($command)->toContain('--verbose')
+        ->and($command)->toContain('--recursive');
+});
+
+it('generates command with exclude option', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->exclude('*.log')
+        ->toCommand();
+
+    expect($command)->toContain("--exclude='*.log'");
+});
+
+it('generates command with multiple excludes', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->exclude(['*.log', '.git'])
+        ->toCommand();
+
+    expect($command)->toContain("--exclude='*.log'")
+        ->and($command)->toContain("--exclude='.git'");
+});
+
+it('generates command with exclude-from option', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->excludeFrom('/patterns.txt')
+        ->toCommand();
+
+    expect($command)->toContain("--exclude-from='/patterns.txt'");
+});
+
+it('generates command with include option', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->include('*.php')
+        ->toCommand();
+
+    expect($command)->toContain("--include='*.php'");
+});
+
+it('generates command with backup options', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->backup()
+        ->backupDir('/backup')
+        ->suffix('.bak')
+        ->toCommand();
+
+    expect($command)->toContain('--backup')
+        ->and($command)->toContain("--backup-dir='/backup'")
+        ->and($command)->toContain("--suffix='.bak'");
+});
+
+it('generates command with size options', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->maxSize('10M')
+        ->minSize('1K')
+        ->toCommand();
+
+    expect($command)->toContain("--max-size='10M'")
+        ->and($command)->toContain("--min-size='1K'");
+});
+
+it('generates command with integer size options', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->maxSize(1048576)
+        ->toCommand();
+
+    expect($command)->toContain("--max-size='1048576'");
+});
+
+it('generates command with all metadata flags', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->times()
+        ->perms()
+        ->owner()
+        ->group()
+        ->acls()
+        ->xattrs()
+        ->devices()
+        ->specials()
+        ->numericIds()
+        ->toCommand();
+
+    expect($command)->toContain('--times')
+        ->and($command)->toContain('--perms')
+        ->and($command)->toContain('--owner')
+        ->and($command)->toContain('--group')
+        ->and($command)->toContain('--acls')
+        ->and($command)->toContain('--xattrs')
+        ->and($command)->toContain('--devices')
+        ->and($command)->toContain('--specials')
+        ->and($command)->toContain('--numeric-ids');
+});
+
+it('generates command with comparison flags', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->checksum()
+        ->ignoreTimes()
+        ->sizeOnly()
+        ->update()
+        ->toCommand();
+
+    expect($command)->toContain('--checksum')
+        ->and($command)->toContain('--ignore-times')
+        ->and($command)->toContain('--size-only')
+        ->and($command)->toContain('--update');
+});
+
+it('generates command with symlink flags', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->links()
+        ->copyLinks()
+        ->copyUnsafeLinks()
+        ->safeLinks()
+        ->hardLinks()
+        ->toCommand();
+
+    expect($command)->toContain('--links')
+        ->and($command)->toContain('--copy-links')
+        ->and($command)->toContain('--copy-unsafe-links')
+        ->and($command)->toContain('--safe-links')
+        ->and($command)->toContain('--hard-links');
+});
+
+it('generates command with behavior flags', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->dryRun()
+        ->force()
+        ->removeSourceFiles()
+        ->toCommand();
+
+    expect($command)->toContain('--dry-run')
+        ->and($command)->toContain('--force')
+        ->and($command)->toContain('--remove-source-files');
+});
+
+it('generates command with output flags', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->verbose()
+        ->quiet()
+        ->progress()
+        ->stats()
+        ->itemizeChanges()
+        ->humanReadable()
+        ->toCommand();
+
+    expect($command)->toContain('--verbose')
+        ->and($command)->toContain('--quiet')
+        ->and($command)->toContain('--progress')
+        ->and($command)->toContain('--stats')
+        ->and($command)->toContain('--itemize-changes')
+        ->and($command)->toContain('--human-readable');
+});
+
+it('generates command with delete mode flags', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->deleteBefore()
+        ->deleteAfter()
+        ->deleteExcluded()
+        ->toCommand();
+
+    expect($command)->toContain('--delete-before')
+        ->and($command)->toContain('--delete-after')
+        ->and($command)->toContain('--delete-excluded');
+});
+
+it('generates command with prune-empty-dirs flag', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->pruneEmptyDirs()
+        ->toCommand();
+
+    expect($command)->toContain('--prune-empty-dirs');
+});
+
+it('generates command with exclude-dir option', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->excludeDir('node_modules')
+        ->toCommand();
+
+    expect($command)->toContain("--exclude-dir='node_modules'");
+});
+
+it('generates command with include-from option', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->includeFrom('/includes.txt')
+        ->toCommand();
+
+    expect($command)->toContain("--include-from='/includes.txt'");
+});
+
+it('deduplicates flags in command', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->delete()
+        ->delete()
+        ->verbose()
+        ->verbose()
+        ->toCommand();
+
+    $deleteCount = substr_count($command, '--delete');
+    $verboseCount = substr_count($command, '--verbose');
+
+    expect($deleteCount)->toBe(1)
+        ->and($verboseCount)->toBe(1);
+});
+
+it('resets all flags and options', function (): void {
+    $rsync = new Rsync();
+    $rsync->copy('/src', '/dest')
+        ->delete()
+        ->verbose()
+        ->exclude('*.log');
+
+    $rsync->reset();
+
+    $command = $rsync->copy('/src2', '/dest2')->toCommand();
+
+    expect($command)->not->toContain('--delete')
+        ->and($command)->not->toContain('--verbose')
+        ->and($command)->not->toContain('--exclude')
+        ->and($command)->toContain("'/src2' '/dest2'");
+});
+
+// ─── dryRun() Tests ──────────────────────────────────────────────
+
+it('does not copy files in dry-run mode', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'Content');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->dryRun()
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and(file_exists($this->destDir.'/file.txt'))->toBeFalse();
+});
+
+it('does not delete files in dry-run mode', function (): void {
+    file_put_contents($this->destDir.'/existing.txt', 'Existing');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->delete()
+        ->dryRun()
+        ->run();
+
+    expect($result->deletedCount())->toBe(1)
+        ->and(file_exists($this->destDir.'/existing.txt'))->toBeTrue();
+});
+
+it('reports what would be copied in dry-run mode', function (): void {
+    file_put_contents($this->sourceDir.'/file1.txt', 'Content 1');
+    file_put_contents($this->sourceDir.'/file2.txt', 'Content 2');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->dryRun()
+        ->run();
+
+    expect($result->copiedPaths())->toContain('file1.txt')
+        ->and($result->copiedPaths())->toContain('file2.txt');
+});
+
+it('reports what would be deleted in dry-run mode', function (): void {
+    file_put_contents($this->destDir.'/old_file.txt', 'Old');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->delete()
+        ->dryRun()
+        ->run();
+
+    expect($result->deletedPaths())->toBe(['old_file.txt']);
+});
+
+it('skips already synced files in dry-run mode', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'Content');
+    file_put_contents($this->destDir.'/file.txt', 'Content');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->dryRun()
+        ->run();
+
+    expect($result->copiedCount())->toBe(0)
+        ->and($result->skippedCount())->toBe(1);
+});
+
+it('skips excluded files in dry-run delete mode', function (): void {
+    file_put_contents($this->destDir.'/keep.txt', 'Keep');
+    file_put_contents($this->destDir.'/old.txt', 'Old');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->delete()
+        ->exclude('old.txt')
+        ->dryRun()
+        ->run();
+
+    expect($result->deletedCount())->toBe(1)
+        ->and($result->deletedPaths())->not->toContain('old.txt')
+        ->and(file_exists($this->destDir.'/old.txt'))->toBeTrue();
+});
+
+it('skips source files that also exist in destination during dry-run delete', function (): void {
+    file_put_contents($this->sourceDir.'/shared.txt', 'Content');
+    file_put_contents($this->destDir.'/shared.txt', 'Content');
+    file_put_contents($this->destDir.'/extra.txt', 'Extra');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->delete()
+        ->dryRun()
+        ->run();
+
+    expect($result->deletedPaths())->toBe(['extra.txt']);
+});
+
+it('preserves destination files that exist in source during delete', function (): void {
+    file_put_contents($this->sourceDir.'/shared.txt', 'Source content');
+    file_put_contents($this->destDir.'/shared.txt', 'Dest content');
+    file_put_contents($this->destDir.'/extra.txt', 'Extra');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->delete()
+        ->run();
+
+    expect($result->deletedPaths())->toBe(['extra.txt'])
+        ->and(file_exists($this->destDir.'/shared.txt'))->toBeTrue();
+});
+
+it('preserves excluded destination files during delete', function (): void {
+    file_put_contents($this->destDir.'/keep.log', 'Log content');
+    file_put_contents($this->destDir.'/old.txt', 'Old');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->delete()
+        ->exclude('*.log')
+        ->run();
+
+    expect($result->deletedPaths())->toBe(['old.txt'])
+        ->and(file_exists($this->destDir.'/keep.log'))->toBeTrue();
+});
+
+// ─── Delete Behavior Tests ───────────────────────────────────────
+
+it('does not delete files when delete flag is not set', function (): void {
+    file_put_contents($this->destDir.'/existing.txt', 'Existing');
+    file_put_contents($this->sourceDir.'/new.txt', 'New');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->run();
+
+    expect($result->deletedCount())->toBe(0)
+        ->and(file_exists($this->destDir.'/existing.txt'))->toBeTrue();
+});
+
+it('deletes files when delete flag is explicitly set', function (): void {
+    file_put_contents($this->destDir.'/old_file.txt', 'Old');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->delete()
+        ->run();
+
+    expect($result->deletedCount())->toBe(1)
+        ->and(file_exists($this->destDir.'/old_file.txt'))->toBeFalse();
+});
+
+it('deletes files when delete-before flag is set', function (): void {
+    file_put_contents($this->destDir.'/old_file.txt', 'Old');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->deleteBefore()
+        ->run();
+
+    expect($result->deletedCount())->toBe(1)
+        ->and(file_exists($this->destDir.'/old_file.txt'))->toBeFalse();
+});
+
+it('deletes files when delete-after flag is set', function (): void {
+    file_put_contents($this->destDir.'/old_file.txt', 'Old');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->deleteAfter()
+        ->run();
+
+    expect($result->deletedCount())->toBe(1)
+        ->and(file_exists($this->destDir.'/old_file.txt'))->toBeFalse();
+});
+
+// ─── exclude() Method Tests ──────────────────────────────────────
+
+it('excludes files using exclude method', function (): void {
+    file_put_contents($this->sourceDir.'/keep.txt', 'Keep');
+    file_put_contents($this->sourceDir.'/skip.log', 'Skip');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->exclude('*.log')
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and($result->skippedCount())->toBe(1)
+        ->and(file_exists($this->destDir.'/skip.log'))->toBeFalse();
+});
+
+it('excludes multiple patterns with exclude method', function (): void {
+    file_put_contents($this->sourceDir.'/app.php', 'App');
+    file_put_contents($this->sourceDir.'/debug.log', 'Log');
+    file_put_contents($this->sourceDir.'/config.env', 'Config');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->exclude(['*.log', '*.env'])
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and($result->skippedCount())->toBe(2);
+});
+
+it('combines skip and exclude methods', function (): void {
+    file_put_contents($this->sourceDir.'/app.php', 'App');
+    file_put_contents($this->sourceDir.'/debug.log', 'Log');
+    file_put_contents($this->sourceDir.'/config.env', 'Config');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->skip('*.log')
+        ->exclude('*.env')
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and($result->skippedCount())->toBe(2);
+});
+
+// ─── excludeDir() Method Tests ───────────────────────────────────
+
+it('excludes directories using excludeDir method', function (): void {
+    mkdir($this->sourceDir.'/vendor/package', recursive: true);
+    mkdir($this->sourceDir.'/src', recursive: true);
+    file_put_contents($this->sourceDir.'/vendor/package/file.php', 'Vendor');
+    file_put_contents($this->sourceDir.'/src/app.php', 'App');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->excludeDir('vendor')
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and(file_exists($this->destDir.'/src/app.php'))->toBeTrue()
+        ->and(file_exists($this->destDir.'/vendor/package/file.php'))->toBeFalse();
+});
+
+// ─── include() Method Tests ──────────────────────────────────────
+
+it('includes files using include method', function (): void {
+    file_put_contents($this->sourceDir.'/code.php', 'PHP');
+    file_put_contents($this->sourceDir.'/readme.md', 'README');
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->include('*.php')
+        ->run();
+
+    expect($result->copiedCount())->toBe(2);
+});
+
+// ─── backup() Method Tests ───────────────────────────────────────
+
+it('handles backup flag in command generation', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->backup()
+        ->toCommand();
+
+    expect($command)->toContain('--backup');
+});
+
+it('handles backup-dir option in command generation', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->backupDir('/my/backup')
+        ->toCommand();
+
+    expect($command)->toContain("--backup-dir='/my/backup'");
+});
+
+it('handles suffix option in command generation', function (): void {
+    $command = new Rsync()
+        ->copy('/src', '/dest')
+        ->suffix('.backup')
+        ->toCommand();
+
+    expect($command)->toContain("--suffix='.backup'");
+});
+
+// ─── Complex Command Generation Tests ────────────────────────────
+
+it('generates complex command with all options', function (): void {
+    $command = new Rsync()
+        ->copy('/var/www/html', '/backup/www')
+        ->archive()
+        ->delete()
+        ->deleteExcluded()
+        ->verbose()
+        ->progress()
+        ->stats()
+        ->humanReadable()
+        ->exclude(['*.log', '.git', 'vendor/node_modules'])
+        ->backup()
+        ->backupDir('/backup/old')
+        ->suffix('.bak')
+        ->checksum()
+        ->hardLinks()
+        ->acls()
+        ->xattrs()
+        ->pruneEmptyDirs()
+        ->toCommand();
+
+    expect($command)->toContain('rsync')
+        ->and($command)->toContain('--archive')
+        ->and($command)->toContain('--delete')
+        ->and($command)->toContain('--delete-excluded')
+        ->and($command)->toContain('--verbose')
+        ->and($command)->toContain('--progress')
+        ->and($command)->toContain('--stats')
+        ->and($command)->toContain('--human-readable')
+        ->and($command)->toContain("--exclude='*.log'")
+        ->and($command)->toContain("--exclude='.git'")
+        ->and($command)->toContain("--exclude='vendor/node_modules'")
+        ->and($command)->toContain('--backup')
+        ->and($command)->toContain("--backup-dir='/backup/old'")
+        ->and($command)->toContain("--suffix='.bak'")
+        ->and($command)->toContain('--checksum')
+        ->and($command)->toContain('--hard-links')
+        ->and($command)->toContain('--acls')
+        ->and($command)->toContain('--xattrs')
+        ->and($command)->toContain('--prune-empty-dirs')
+        ->and($command)->toContain("'/var/www/html' '/backup/www'");
+});
+
+// ─── Fluent Interface Tests ──────────────────────────────────────
+
+it('returns self from all flag methods', function (): void {
+    $rsync = new Rsync();
+
+    expect($rsync->delete())->toBe($rsync)
+        ->and($rsync->recursive())->toBe($rsync)
+        ->and($rsync->archive())->toBe($rsync)
+        ->and($rsync->times())->toBe($rsync)
+        ->and($rsync->perms())->toBe($rsync)
+        ->and($rsync->owner())->toBe($rsync)
+        ->and($rsync->group())->toBe($rsync)
+        ->and($rsync->acls())->toBe($rsync)
+        ->and($rsync->xattrs())->toBe($rsync)
+        ->and($rsync->devices())->toBe($rsync)
+        ->and($rsync->specials())->toBe($rsync)
+        ->and($rsync->numericIds())->toBe($rsync)
+        ->and($rsync->checksum())->toBe($rsync)
+        ->and($rsync->ignoreTimes())->toBe($rsync)
+        ->and($rsync->sizeOnly())->toBe($rsync)
+        ->and($rsync->update())->toBe($rsync)
+        ->and($rsync->pruneEmptyDirs())->toBe($rsync)
+        ->and($rsync->backup())->toBe($rsync)
+        ->and($rsync->links())->toBe($rsync)
+        ->and($rsync->copyLinks())->toBe($rsync)
+        ->and($rsync->copyUnsafeLinks())->toBe($rsync)
+        ->and($rsync->safeLinks())->toBe($rsync)
+        ->and($rsync->hardLinks())->toBe($rsync)
+        ->and($rsync->dryRun())->toBe($rsync)
+        ->and($rsync->force())->toBe($rsync)
+        ->and($rsync->removeSourceFiles())->toBe($rsync)
+        ->and($rsync->verbose())->toBe($rsync)
+        ->and($rsync->quiet())->toBe($rsync)
+        ->and($rsync->progress())->toBe($rsync)
+        ->and($rsync->stats())->toBe($rsync)
+        ->and($rsync->itemizeChanges())->toBe($rsync)
+        ->and($rsync->humanReadable())->toBe($rsync)
+        ->and($rsync->deleteBefore())->toBe($rsync)
+        ->and($rsync->deleteAfter())->toBe($rsync)
+        ->and($rsync->deleteExcluded())->toBe($rsync);
+});
+
+it('returns self from option methods', function (): void {
+    $rsync = new Rsync();
+
+    expect($rsync->exclude('*.log'))->toBe($rsync)
+        ->and($rsync->excludeFrom('/file'))->toBe($rsync)
+        ->and($rsync->excludeDir('dir'))->toBe($rsync)
+        ->and($rsync->include('*.php'))->toBe($rsync)
+        ->and($rsync->includeFrom('/file'))->toBe($rsync)
+        ->and($rsync->backupDir('/dir'))->toBe($rsync)
+        ->and($rsync->suffix('.bak'))->toBe($rsync)
+        ->and($rsync->maxSize('10M'))->toBe($rsync)
+        ->and($rsync->minSize('1K'))->toBe($rsync);
 });
