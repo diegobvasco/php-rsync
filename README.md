@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://raw.githubusercontent.com/diegobvasco/php-rsync/master/docs/php-rsync.png" height="300" alt="PHP Rsync">
+    <img src="https://raw.githubusercontent.com/diegobvasco/php-rsync/main/docs/php-rsync.webp" height="300" alt="PHP Rsync">
     <p align="center">
         <a href="https://github.com/diegobvasco/php-rsync/actions"><img alt="GitHub Workflow Status (master)" src="https://github.com/diegobvasco/php-rsync/actions/workflows/tests.yml/badge.svg"></a>
         <a href="https://packagist.org/packages/diegobvasco/php-rsync"><img alt="Total Downloads" src="https://img.shields.io/packagist/dt/diegobvasco/php-rsync"></a>
