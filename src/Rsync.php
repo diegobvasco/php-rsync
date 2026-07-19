@@ -557,7 +557,7 @@ class Rsync
         $singleValueOptions = ['exclude-from', 'include-from', 'backup-dir', 'suffix', 'max-size', 'min-size'];
         foreach ($singleValueOptions as $option) {
             if (isset($this->options[$option]) && is_string($this->options[$option])) {
-                $parts[] = '--'.$option.'='.escapeshellarg($this->options[$option]);
+                $parts[] = '--'.$option.'='."'{$this->options[$option]}'";
             }
         }
 
@@ -566,18 +566,18 @@ class Rsync
         foreach ($arrayOptions as $option) {
             if (isset($this->options[$option]) && is_array($this->options[$option])) {
                 foreach ($this->options[$option] as $value) {
-                    $parts[] = '--'.$option.'='.escapeshellarg($value);
+                    $parts[] = '--'.$option.'='."'{$value}'";
                 }
             }
         }
 
         // Source and destination
         if ($this->source !== null) {
-            $parts[] = escapeshellarg($this->source);
+            $parts[] = "'{$this->source}'";
         }
 
         if ($this->destination !== null) {
-            $parts[] = escapeshellarg($this->destination);
+            $parts[] = "'{$this->destination}'";
         }
 
         return implode(' ', $parts);
