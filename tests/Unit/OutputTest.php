@@ -76,6 +76,7 @@ it('calls output deleted when files are removed', function (): void {
 
     new Rsync($output)
         ->copy($this->sourceDir, $this->destDir)
+        ->delete()
         ->run();
 
     expect($output->actions)->toBe(['deleted:old.txt']);

@@ -50,6 +50,46 @@ foreach ($result->copied as $file) {
 }
 ```
 
+### With Delete Mode
+
+```php
+$result = (new Rsync())
+    ->copy('/path/to/source', '/path/to/destination')
+    ->delete()
+    ->run();
+```
+
+### With Real-Time Output
+
+```php
+use DiegoVasconcelos\Rsync\Rsync;
+use DiegoVasconcelos\Rsync\TerminalOutput;
+
+// Print each file action to the terminal as it happens
+$result = (new Rsync(new TerminalOutput()))
+    ->copy('/path/to/source', '/path/to/destination')
+    ->delete()
+    ->run();
+
+// Output:
+// COPY new-file.txt (2.5 KB)
+// DELETE old-file.txt
+// SKIP unchanged.txt
+```
+
+### Dry Run
+
+```php
+$result = (new Rsync())
+    ->copy('/path/to/source', '/path/to/destination')
+    ->delete()
+    ->dryRun()
+    ->run();
+
+// No files are actually copied or deleted
+echo $result->summary();
+```
+
 ### Accessing Results
 
 ```php
@@ -81,7 +121,7 @@ $result->summary();        // Human-readable summary string
 2. Filters out files matching exclusion patterns
 3. Compares each file's **modification time** and **size** against the destination
 4. Copies only new or changed files
-5. Deletes destination files that no longer exist in the source
+5. Deletes destination files that no longer exist in the source (when `delete()` is enabled)
 6. Removes empty directories from the destination
 7. Returns a `Result` object with full sync details
 
@@ -89,11 +129,111 @@ $result->summary();        // Human-readable summary string
 
 ### `Rsync`
 
+```php
+new Rsync(?Output $output = null)
+```
+
+The optional `Output` interface receives callbacks for each file action during sync. A `TerminalOutput` implementation is included that prints to STDOUT (or a custom stream).
+
+#### Core
+
 | Method | Description |
 |---|---|
 | `copy(string $source, string $destination): self` | Set source and destination directories |
 | `skip(string\|array $patterns): self` | Add glob patterns to exclude from sync |
+| `delete(): self` | Enable delete mode — removes destination files not in source |
+| `recursive(): self` | Enable recursive mode |
+| `archive(): self` | Enable archive mode (equivalent to `-rlptgoD`) |
 | `run(): Result` | Execute the sync and return results |
+| `toCommand(): string` | Generate equivalent rsync shell command for debugging |
+| `reset(): self` | Reset all flags and options |
+
+#### Metadata Preservation
+
+| Method | Description |
+|---|---|
+| `times(): self` | Preserve modification times (`--times`) |
+| `perms(): self` | Preserve permissions (`--perms`) |
+| `owner(): self` | Preserve owner (`--owner`) |
+| `group(): self` | Preserve group (`--group`) |
+| `acls(): self` | Preserve ACLs (`--acls`) |
+| `xattrs(): self` | Preserve extended attributes (`--xattrs`) |
+| `devices(): self` | Preserve device files (`--devices`) |
+| `specials(): self` | Preserve special files (`--specials`) |
+| `numericIds(): self` | Don't map uid/gid values (`--numeric-ids`) |
+
+#### Comparison
+
+| Method | Description |
+|---|---|
+| `checksum(): self` | Use checksum instead of mod-time & size (`--checksum`) |
+| `ignoreTimes(): self` | Don't skip files that match size and time (`--ignore-times`) |
+| `sizeOnly(): self` | Skip files that match size only (`--size-only`) |
+| `update(): self` | Skip files newer on the receiver (`--update`) |
+
+#### Excludes / Includes
+
+| Method | Description |
+|---|---|
+| `exclude(string\|array $patterns): self` | Add patterns to exclude (`--exclude`) |
+| `excludeFrom(string $file): self` | Read exclude patterns from file (`--exclude-from`) |
+| `excludeDir(string\|array $patterns): self` | Add directory exclusion patterns (`--exclude-dir`) |
+| `include(string\|array $patterns): self` | Add patterns to include (`--include`) |
+| `includeFrom(string $file): self` | Read include patterns from file (`--include-from`) |
+| `pruneEmptyDirs(): self` | Remove empty directories from file list (`--prune-empty-dirs`) |
+
+#### Backup
+
+| Method | Description |
+|---|---|
+| `backup(): self` | Make backups of changed files (`--backup`) |
+| `backupDir(string $dir): self` | Set backup directory (`--backup-dir`) |
+| `suffix(string $suffix): self` | Set backup suffix (`--suffix`) |
+
+#### Symlinks / Hardlinks
+
+| Method | Description |
+|---|---|
+| `links(): self` | Copy symlinks as symlinks (`--links`) |
+| `copyLinks(): self` | Transform symlinks to referent files (`--copy-links`) |
+| `copyUnsafeLinks(): self` | Transform unsafe symlinks to referent files in directories (`--copy-unsafe-links`) |
+| `safeLinks(): self` | Ignore symlinks that go outside tree (`--safe-links`) |
+| `hardLinks(): self` | Preserve hard links (`--hard-links`) |
+
+#### Size Limits
+
+| Method | Description |
+|---|---|
+| `maxSize(int\|string $size): self` | Maximum file size to transfer (`--max-size`) |
+| `minSize(int\|string $size): self` | Minimum file size to transfer (`--min-size`) |
+
+#### Behavior
+
+| Method | Description |
+|---|---|
+| `dryRun(): self` | Show what would be done without doing it (`--dry-run`) |
+| `force(): self` | Force deletion of non-empty directories (`--force`) |
+| `removeSourceFiles(): self` | Remove source files after successful transfer (`--remove-source-files`) |
+
+#### Output
+
+| Method | Description |
+|---|---|
+| `verbose(): self` | Verbose output (`--verbose`) |
+| `quiet(): self` | Suppress output (`--quiet`) |
+| `progress(): self` | Show progress (`--progress`) |
+| `stats(): self` | Show statistics (`--stats`) |
+| `itemizeChanges(): self` | Show itemized changes (`--itemize-changes`) |
+| `humanReadable(): self` | Human-readable numbers (`--human-readable`) |
+
+#### Delete Modes
+
+| Method | Description |
+|---|---|
+| `delete(): self` | Delete files in destination not in source (`--delete`) |
+| `deleteBefore(): self` | Delete before transfer (`--delete-before`) |
+| `deleteAfter(): self` | Delete after transfer (`--delete-after`) |
+| `deleteExcluded(): self` | Delete excluded files from destination (`--delete-excluded`) |
 
 ### `Result`
 
@@ -115,6 +255,30 @@ $result->summary();        // Human-readable summary string
 |---|---|
 | `formattedSize(): string` | Human-readable file size (e.g. "12.5 KB") |
 | `formattedMtime(): string` | ISO 8601 formatted modification time |
+
+### `Output` (interface)
+
+Implement this to receive real-time file action callbacks during sync.
+
+| Method | Description |
+|---|---|
+| `copied(FileInfo $file): void` | Called when a file is copied |
+| `deleted(FileInfo $file): void` | Called when a file is deleted |
+| `skipped(FileInfo $file): void` | Called when a file is skipped |
+
+### `TerminalOutput`
+
+Built-in implementation of `Output` that prints actions to a stream.
+
+```php
+new TerminalOutput(?resource $stream = null)
+```
+
+Defaults to `STDOUT`. Pass a custom stream to redirect output:
+
+```php
+$output = new TerminalOutput(fopen('php://memory', 'r+'));
+```
 
 ## Quality
 
