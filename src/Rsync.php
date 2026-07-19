@@ -18,6 +18,8 @@ final class Rsync
     /** @var array<string> */
     private array $excludes = [];
 
+    public function __construct(private ?Output $output = null) {}
+
     /**
      * Set the source and destination directories.
      */
@@ -72,6 +74,7 @@ final class Rsync
 
             if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile)) {
                 $skipped[] = $sourceFile;
+                $this->output?->skipped($sourceFile);
 
                 continue;
             }
@@ -80,6 +83,7 @@ final class Rsync
 
             if ($this->copyFile($sourceFile->absolutePath, $destPath)) {
                 $copied[] = $sourceFile;
+                $this->output?->copied($sourceFile);
             }
         }
 
@@ -95,6 +99,7 @@ final class Rsync
 
             if ($this->deleteFile($destinationFile->absolutePath)) {
                 $deleted[] = $destinationFile;
+                $this->output?->deleted($destinationFile);
             }
         }
 
