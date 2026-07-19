@@ -1,0 +1,62 @@
+{
+    "name": "diegobvasco/php-rsync",
+    "description": "A skeleton repository for my packages",
+    "keywords": [
+        "php",
+        "deploy",
+        "sync"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Diego Barbosa Vasconcelos",
+            "email": "diego_vasconcelos1@hotmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.5.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.29.0",
+        "pestphp/pest": "^5.0.0",
+        "pestphp/pest-plugin-type-coverage": "^5.0.0",
+        "phpstan/phpstan": "^2.1.49",
+        "rector/rector": "^2.4.2",
+        "symfony/var-dumper": "^8.0.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "DiegoVasconcelos\\Rsync\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "lint": "pint",
+        "refactor": "rector",
+        "test:type-coverage": "pest --type-coverage --exactly=100",
+        "test:lint": "pint --test",
+        "test:unit": "pest --coverage --min=100",
+        "test:types": "phpstan",
+        "test:refactor": "rector --dry-run",
+        "test": [
+            "@test:lint",
+            "@test:type-coverage",
+            "@test:unit",
+            "@test:types",
+            "@test:refactor"
+        ]
+    }
+}
