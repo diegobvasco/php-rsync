@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.2.0](https://github.com/diegobvasco/php-rsync/compare/v1.1.0...v1.2.0) (2026-07-19)
+
+
+### Features
+
+* implement --checksum flag for file comparison ([#5](https://github.com/diegobvasco/php-rsync/issues/5)) ([320f1f9](https://github.com/diegobvasco/php-rsync/commit/320f1f9bb90f56986421280387d7232e094bd1e0))
+
 ## [1.1.0](https://github.com/diegobvasco/php-rsync/compare/v1.0.0...v1.1.0) (2026-07-19)
 
 
