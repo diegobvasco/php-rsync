@@ -311,19 +311,23 @@ it('skips files matching negated character class pattern', function (): void {
 it('handles unreadable source directory', function (): void {
     $unreadableDir = $this->sourceDir.'/unreadable';
     mkdir($unreadableDir);
-    chmod($unreadableDir, 0000);
+
+    $rsync = new class() extends Rsync
+    {
+        protected function isReadable(string $path): bool
+        {
+            return false;
+        }
+    };
 
     try {
-        $result = new Rsync()
+        $result = $rsync
             ->copy($unreadableDir, $this->destDir)
             ->run();
 
-        // If we can still read it (e.g. running as root), just verify it works
         expect($result->copiedCount())->toBe(0);
     } catch (InvalidArgumentException $invalidArgumentException) {
         expect($invalidArgumentException->getMessage())->toContain('not readable');
-    } finally {
-        chmod($unreadableDir, 0755);
     }
 });
 

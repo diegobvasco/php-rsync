@@ -7,7 +7,7 @@ namespace DiegoVasconcelos\Rsync;
 use DiegoVasconcelos\Rsync\Concerns\HasFilesystem;
 use InvalidArgumentException;
 
-final class Rsync
+class Rsync
 {
     use HasFilesystem;
 
@@ -126,9 +126,17 @@ final class Rsync
             throw new InvalidArgumentException('Source directory does not exist: '.$this->source);
         }
 
-        if (! is_readable($this->source)) {
+        if (! $this->isReadable($this->source)) {
             throw new InvalidArgumentException('Source directory is not readable: '.$this->source);
         }
+    }
+
+    /**
+     * Check if a path is readable. Protected to allow testing on platforms where chmod doesn't work.
+     */
+    protected function isReadable(string $path): bool
+    {
+        return is_readable($path);
     }
 
     /**
