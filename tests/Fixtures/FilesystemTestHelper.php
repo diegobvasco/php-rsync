@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Fixtures;
 
 use DiegoVasconcelos\Rsync\Concerns\HasFilesystem;
+use DiegoVasconcelos\Rsync\FileInfo;
 
 class FilesystemTestHelper
 {
@@ -23,5 +24,10 @@ class FilesystemTestHelper
     public function doGlobToRegex(string $pattern): string
     {
         return $this->globToRegex($pattern);
+    }
+
+    public function doShouldSync(FileInfo $source, FileInfo $destination, bool $useChecksum = false): bool
+    {
+        return $this->shouldSync($source, $destination, $useChecksum);
     }
 }

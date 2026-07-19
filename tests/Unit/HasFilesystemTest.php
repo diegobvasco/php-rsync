@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DiegoVasconcelos\Rsync\FileInfo;
 use DiegoVasconcelos\Rsync\Rsync;
 use Tests\Fixtures\FilesystemTestHelper;
 
@@ -76,4 +77,53 @@ it('globToRegex handles slash inside character class', function (): void {
 it('globToRegex handles negated character class with slash', function (): void {
     $result = $this->helper->doGlobToRegex('[^a/b].txt');
     expect($result)->toBe('/^[^a\\/b]\\.txt$/');
+});
+
+it('shouldSync detects different content via checksum', function (): void {
+    $source = new FileInfo('file.txt', '/src/file.txt', 10, 1000, 'hash_a');
+    $dest = new FileInfo('file.txt', '/dest/file.txt', 10, 1000, 'hash_b');
+
+    expect($this->helper->doShouldSync($source, $dest, useChecksum: true))->toBeTrue();
+});
+
+it('shouldSync skips identical content via checksum', function (): void {
+    $source = new FileInfo('file.txt', '/src/file.txt', 10, 1000, 'same_hash');
+    $dest = new FileInfo('file.txt', '/dest/file.txt', 10, 2000, 'same_hash');
+
+    expect($this->helper->doShouldSync($source, $dest, useChecksum: true))->toBeFalse();
+});
+
+it('shouldSync ignores mtime difference when using checksum', function (): void {
+    $source = new FileInfo('file.txt', '/src/file.txt', 10, 1000, 'same_hash');
+    $dest = new FileInfo('file.txt', '/dest/file.txt', 10, 9999, 'same_hash');
+
+    expect($this->helper->doShouldSync($source, $dest, useChecksum: true))->toBeFalse();
+});
+
+it('shouldSync detects size difference via checksum even with same mtime', function (): void {
+    $source = new FileInfo('file.txt', '/src/file.txt', 10, 1000, 'hash_a');
+    $dest = new FileInfo('file.txt', '/dest/file.txt', 10, 1000, 'hash_b');
+
+    expect($this->helper->doShouldSync($source, $dest, useChecksum: true))->toBeTrue();
+});
+
+it('shouldSync uses mtime and size by default without checksum', function (): void {
+    $source = new FileInfo('file.txt', '/src/file.txt', 10, 1000, 'same_hash');
+    $dest = new FileInfo('file.txt', '/dest/file.txt', 10, 1000, 'same_hash');
+
+    expect($this->helper->doShouldSync($source, $dest))->toBeFalse();
+});
+
+it('shouldSync detects mtime change without checksum', function (): void {
+    $source = new FileInfo('file.txt', '/src/file.txt', 10, 2000, 'same_hash');
+    $dest = new FileInfo('file.txt', '/dest/file.txt', 10, 1000, 'same_hash');
+
+    expect($this->helper->doShouldSync($source, $dest))->toBeTrue();
+});
+
+it('shouldSync detects size change without checksum', function (): void {
+    $source = new FileInfo('file.txt', '/src/file.txt', 20, 1000, 'same_hash');
+    $dest = new FileInfo('file.txt', '/dest/file.txt', 10, 1000, 'same_hash');
+
+    expect($this->helper->doShouldSync($source, $dest))->toBeTrue();
 });
