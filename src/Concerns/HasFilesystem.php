@@ -36,6 +36,7 @@ trait HasFilesystem
                 absolutePath: $file->getPathname(),
                 size: $file->getSize(),
                 mtime: $file->getMTime(),
+                checksum: hash_file('xxh128', $file->getPathname()) ?: '',
             );
         }
 
@@ -80,10 +81,14 @@ trait HasFilesystem
     }
 
     /**
-     * Check if a file should be synced based on modification time and size.
+     * Check if a file should be synced based on modification time, size, or checksum.
      */
-    protected function shouldSync(FileInfo $source, FileInfo $destination): bool
+    protected function shouldSync(FileInfo $source, FileInfo $destination, bool $useChecksum = false): bool
     {
+        if ($useChecksum) {
+            return $source->checksum !== $destination->checksum;
+        }
+
         return $source->mtime !== $destination->mtime
             || $source->size !== $destination->size;
     }

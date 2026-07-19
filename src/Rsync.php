@@ -625,11 +625,13 @@ class Rsync
         $skipped = [];
         $deleted = [];
 
+        $useChecksum = in_array('--checksum', $this->flags, true);
+
         // Process source files - copy new or updated files
         foreach ($sourceFiles as $relativePath => $sourceFile) {
             $destinationFile = $destinationFiles[$relativePath] ?? null;
 
-            if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile)) {
+            if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
                 $skipped[] = $sourceFile;
                 $this->output?->skipped($sourceFile);
 
@@ -688,11 +690,13 @@ class Rsync
         $skipped = [];
         $deleted = [];
 
+        $useChecksum = in_array('--checksum', $this->flags, true);
+
         // Determine what would be copied
         foreach ($sourceFiles as $relativePath => $sourceFile) {
             $destinationFile = $destinationFiles[$relativePath] ?? null;
 
-            if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile)) {
+            if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
                 $skipped[] = $sourceFile;
 
                 continue;

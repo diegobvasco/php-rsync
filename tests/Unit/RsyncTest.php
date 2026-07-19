@@ -999,3 +999,105 @@ it('returns self from option methods', function (): void {
         ->and($rsync->maxSize('10M'))->toBe($rsync)
         ->and($rsync->minSize('1K'))->toBe($rsync);
 });
+
+// ─── Checksum Behavior Tests ─────────────────────────────────────
+
+it('syncs files with different content but same mtime and size when checksum is enabled', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'Source content');
+
+    // Create dest file with same size and touch to same mtime
+    file_put_contents($this->destDir.'/file.txt', 'Dest content!');
+    touch($this->destDir.'/file.txt', filemtime($this->sourceDir.'/file.txt'));
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->checksum()
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and(file_get_contents($this->destDir.'/file.txt'))->toBe('Source content');
+});
+
+it('skips files with same content but different mtime when checksum is enabled', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'Same content');
+
+    // Create dest file with same content but different mtime and size
+    file_put_contents($this->destDir.'/file.txt', 'Same content');
+    touch($this->destDir.'/file.txt', filemtime($this->sourceDir.'/file.txt') + 100);
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->checksum()
+        ->run();
+
+    expect($result->copiedCount())->toBe(0)
+        ->and($result->skippedCount())->toBe(1);
+});
+
+it('syncs files with different content when checksum is enabled regardless of matching size', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'AA');
+
+    // Create dest file with same size but different content
+    file_put_contents($this->destDir.'/file.txt', 'BB');
+    touch($this->destDir.'/file.txt', filemtime($this->sourceDir.'/file.txt'));
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->checksum()
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and(file_get_contents($this->destDir.'/file.txt'))->toBe('AA');
+});
+
+it('skips files with same content but different mtime and size when checksum is enabled', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'Same');
+
+    // Create dest file with different size and mtime but same content
+    file_put_contents($this->destDir.'/file.txt', 'Same');
+    clearstatcache();
+    $sourceMtime = filemtime($this->sourceDir.'/file.txt');
+    touch($this->destDir.'/file.txt', $sourceMtime + 100);
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->checksum()
+        ->run();
+
+    expect($result->copiedCount())->toBe(0)
+        ->and($result->skippedCount())->toBe(1);
+});
+
+it('reports checksum-based sync in dry-run mode', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'Source content');
+
+    // Create dest file with same size but different content
+    file_put_contents($this->destDir.'/file.txt', 'Dest content!');
+    touch($this->destDir.'/file.txt', filemtime($this->sourceDir.'/file.txt'));
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->checksum()
+        ->dryRun()
+        ->run();
+
+    expect($result->copiedCount())->toBe(1)
+        ->and(file_get_contents($this->destDir.'/file.txt'))->toBe('Dest content!');
+});
+
+it('does not sync files with same content in dry-run when checksum is enabled', function (): void {
+    file_put_contents($this->sourceDir.'/file.txt', 'Same content');
+
+    // Create dest file with different mtime but same content
+    file_put_contents($this->destDir.'/file.txt', 'Same content');
+    touch($this->destDir.'/file.txt', filemtime($this->sourceDir.'/file.txt') + 100);
+
+    $result = new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->checksum()
+        ->dryRun()
+        ->run();
+
+    expect($result->copiedCount())->toBe(0)
+        ->and($result->skippedCount())->toBe(1);
+});

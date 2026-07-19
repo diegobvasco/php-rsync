@@ -11,6 +11,7 @@ final readonly class FileInfo
         public string $absolutePath,
         public int $size,
         public int $mtime,
+        public string $checksum = '',
     ) {}
 
     /**
