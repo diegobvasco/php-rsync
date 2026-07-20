@@ -163,3 +163,16 @@ it('implements countable', function (): void {
 
     expect(count($collection))->toBe(2);
 });
+
+it('all returns all items', function (): void {
+    $collection = FlagCollection::fromArray(['--delete', '--recursive']);
+
+    expect($collection->all())->toHaveCount(2);
+});
+
+it('offsetExists checks if offset is set', function (): void {
+    $collection = FlagCollection::fromArray(['--delete', '--recursive']);
+
+    expect(isset($collection[0]))->toBeTrue()
+        ->and(isset($collection[99]))->toBeFalse();
+});

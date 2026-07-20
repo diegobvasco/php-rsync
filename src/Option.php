@@ -7,7 +7,7 @@ namespace DiegoVasconcelos\Rsync;
 /**
  * Represents an rsync option with a key and one or more values (e.g., --exclude=pattern).
  */
-final readonly class Option
+final readonly class Option implements \Stringable
 {
     /**
      * @param  array<string>  $values
@@ -30,10 +30,27 @@ final readonly class Option
      */
     public function __toString(): string
     {
+        return $this->toCommandString();
+    }
+
+    /**
+     * Generate command string representation for this option.
+     */
+    public function toCommandString(): string
+    {
         if ($this->values === []) {
             return '--'.$this->key;
         }
 
-        return '--'.$this->key.'='.implode(',', $this->values);
+        if (count($this->values) === 1) {
+            return '--'.$this->key.'='.sprintf("'%s'", $this->values[0]);
+        }
+
+        $key = $this->key;
+
+        return implode(' ', array_map(
+            static fn (string $value): string => '--'.$key.'='.sprintf("'%s'", $value),
+            $this->values,
+        ));
     }
 }

@@ -4,32 +4,16 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-use ArrayAccess;
-use ArrayIterator;
-use BadMethodCallException;
-use Countable;
-use IteratorAggregate;
+use DiegoVasconcelos\Rsync\Concerns\AbstractCollection;
 use JsonSerializable;
 
 /**
  * Immutable collection of Flag objects.
  *
- * @implements IteratorAggregate<int, Flag>
- * @implements ArrayAccess<int, Flag>
+ * @extends AbstractCollection<Flag>
  */
-final readonly class FlagCollection implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
+final readonly class FlagCollection extends AbstractCollection implements \Stringable, JsonSerializable
 {
-    /** @var array<int, Flag> */
-    private array $items;
-
-    /**
-     * @param  array<int, Flag>  $items
-     */
-    public function __construct(array $items = [])
-    {
-        $this->items = array_values($items);
-    }
-
     /**
      * Create a new FlagCollection from an array of flag names.
      *
@@ -46,7 +30,7 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
     public function add(mixed $item): static
     {
         if (! $item instanceof Flag) {
-            throw new BadMethodCallException('FlagCollection only accepts Flag objects.');
+            throw new \BadMethodCallException('FlagCollection only accepts Flag objects.');
         }
 
         // Deduplicate by name
@@ -56,7 +40,7 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
             }
         }
 
-        return new static([...$this->items, $item]);
+        return new self([...$this->items, $item]);
     }
 
     public function addFlag(string $name): static
@@ -69,22 +53,14 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
         $items = $this->items;
 
         foreach ($collection as $flag) {
-            $found = false;
-            foreach ($items as $existing) {
-                if ($existing->name === $flag->name) {
-                    $found = true;
-
-                    break;
-                }
-            }
-
+            $found = array_any($items, fn (Flag $existing): bool => $existing->name === $flag->name);
             if (! $found) {
                 $items[] = $flag;
             }
         }
 
         /** @var array<int, Flag> $items */
-        return new static($items);
+        return new self($items);
     }
 
     public function remove(string $name): static
@@ -95,34 +71,7 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
             static fn (Flag $flag): bool => $flag->name !== $name,
         ));
 
-        return new static($filtered);
-    }
-
-    /**
-     * @return array<int, Flag>
-     */
-    public function all(): array
-    {
-        return $this->items;
-    }
-
-    public function isEmpty(): bool
-    {
-        return $this->items === [];
-    }
-
-    public function first(): Flag
-    {
-        return $this->items[0] ?? throw new BadMethodCallException('Collection is empty.');
-    }
-
-    public function last(): Flag
-    {
-        if ($this->items === []) {
-            throw new BadMethodCallException('Collection is empty.');
-        }
-
-        return $this->items[array_key_last($this->items)];
+        return new self($filtered);
     }
 
     /**
@@ -137,7 +86,7 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
             ARRAY_FILTER_USE_BOTH,
         ));
 
-        return new static($filtered);
+        return new self($filtered);
     }
 
     /**
@@ -153,13 +102,7 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
 
     public function contains(string $name): bool
     {
-        foreach ($this->items as $item) {
-            if ($item->name === $name) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($this->items, fn (Flag $item): bool => $item->name === $name);
     }
 
     /**
@@ -169,10 +112,10 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
      */
     public function names(): array
     {
-        return array_map(
+        return array_values(array_map(
             static fn (Flag $flag): string => $flag->name,
             $this->items,
-        );
+        ));
     }
 
     /**
@@ -186,39 +129,6 @@ final readonly class FlagCollection implements ArrayAccess, Countable, IteratorA
     public function __toString(): string
     {
         return implode(' ', $this->names());
-    }
-
-    public function count(): int
-    {
-        return count($this->items);
-    }
-
-    /**
-     * @return ArrayIterator<int, Flag>
-     */
-    public function getIterator(): ArrayIterator
-    {
-        return new ArrayIterator($this->items);
-    }
-
-    public function offsetExists(mixed $offset): bool
-    {
-        return isset($this->items[$offset]);
-    }
-
-    public function offsetGet(mixed $offset): Flag
-    {
-        return $this->items[$offset] ?? throw new \OutOfBoundsException("Offset {$offset} does not exist.");
-    }
-
-    public function offsetSet(mixed $offset, mixed $value): void
-    {
-        throw new BadMethodCallException('FlagCollection is immutable.');
-    }
-
-    public function offsetUnset(mixed $offset): void
-    {
-        throw new BadMethodCallException('FlagCollection is immutable.');
     }
 
     /**

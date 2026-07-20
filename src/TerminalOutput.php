@@ -7,12 +7,12 @@ namespace DiegoVasconcelos\Rsync;
 final class TerminalOutput implements Output
 {
     /** @var resource */
-    private $stream;
+    private mixed $stream;
 
     /**
      * @param  resource|null  $stream
      */
-    public function __construct($stream = null)
+    public function __construct(mixed $stream = null)
     {
         $this->stream = $stream ?? STDOUT;
     }

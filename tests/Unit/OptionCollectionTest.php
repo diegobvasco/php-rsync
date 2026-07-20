@@ -47,6 +47,7 @@ it('removes option by key', function (): void {
     $collection = new OptionCollection();
     $collection = $collection->addOption('exclude', '*.log');
     $collection = $collection->addOption('backup-dir', '/tmp');
+
     $newCollection = $collection->remove('exclude');
 
     expect($collection->count())->toBe(2)
@@ -138,13 +139,14 @@ it('converts to string', function (): void {
     $collection = $collection->addOption('exclude', '*.log');
     $collection = $collection->addOption('backup-dir', '/tmp');
 
-    expect((string) $collection)->toBe('--exclude=*.log --backup-dir=/tmp');
+    expect((string) $collection)->toBe("--exclude='*.log' --backup-dir='/tmp'");
 });
 
 it('supports foreach', function (): void {
     $collection = new OptionCollection();
     $collection = $collection->addOption('exclude', '*.log');
     $collection = $collection->addOption('backup-dir', '/tmp');
+
     $keys = [];
 
     foreach ($collection as $option) {
@@ -196,6 +198,7 @@ it('filters collection', function (): void {
     $collection = new OptionCollection();
     $collection = $collection->addOption('exclude', '*.log');
     $collection = $collection->addOption('backup-dir', '/tmp');
+
     $filtered = $collection->filter(fn (Option $option): bool => $option->key === 'exclude');
 
     expect($filtered->count())->toBe(1)
@@ -206,6 +209,7 @@ it('maps collection', function (): void {
     $collection = new OptionCollection();
     $collection = $collection->addOption('exclude', '*.log');
     $collection = $collection->addOption('backup-dir', '/tmp');
+
     $mapped = $collection->map(fn (Option $option): string => $option->key);
 
     expect($mapped)->toBe(['exclude', 'backup-dir']);
@@ -225,4 +229,19 @@ it('implements countable', function (): void {
     $collection = $collection->addOption('backup-dir', '/tmp');
 
     expect(count($collection))->toBe(2);
+});
+
+it('all returns all items', function (): void {
+    $collection = new OptionCollection();
+    $collection = $collection->addOption('exclude', '*.log');
+
+    expect($collection->all())->toHaveCount(1);
+});
+
+it('offsetExists checks if offset is set', function (): void {
+    $collection = new OptionCollection();
+    $collection = $collection->addOption('exclude', '*.log');
+
+    expect(isset($collection[0]))->toBeTrue()
+        ->and(isset($collection[99]))->toBeFalse();
 });

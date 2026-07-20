@@ -29,7 +29,7 @@ it('adds value immutably', function (): void {
 it('converts to string with values', function (): void {
     $option = new Option('exclude', ['*.log', 'cache/']);
 
-    expect((string) $option)->toBe('--exclude=*.log,cache/');
+    expect((string) $option)->toBe("--exclude='*.log' --exclude='cache/'");
 });
 
 it('converts to string without values', function (): void {
@@ -41,5 +41,5 @@ it('converts to string without values', function (): void {
 it('converts single value to string', function (): void {
     $option = new Option('backup-dir', ['/tmp/backup']);
 
-    expect((string) $option)->toBe('--backup-dir=/tmp/backup');
+    expect((string) $option)->toBe("--backup-dir='/tmp/backup'");
 });

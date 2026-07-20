@@ -1101,3 +1101,65 @@ it('does not sync files with same content in dry-run when checksum is enabled', 
     expect($result->copiedCount())->toBe(0)
         ->and($result->skippedCount())->toBe(1);
 });
+
+it('getFlags returns the flags collection', function (): void {
+    $rsync = new Rsync()
+        ->delete()
+        ->recursive();
+
+    $flags = $rsync->getFlags();
+
+    expect($flags->count())->toBe(2)
+        ->and($flags->contains('--delete'))->toBeTrue()
+        ->and($flags->contains('--recursive'))->toBeTrue();
+});
+
+it('getOptions returns the options collection', function (): void {
+    $rsync = new Rsync()
+        ->exclude('*.log');
+
+    $options = $rsync->getOptions();
+
+    expect($options->count())->toBe(1)
+        ->and($options->has('exclude'))->toBeTrue();
+});
+
+it('getExcludes returns the excludes collection', function (): void {
+    $rsync = new Rsync();
+    $excludes = $rsync->getExcludes();
+
+    expect($excludes->count())->toBe(0);
+});
+
+it('exclude called twice merges patterns', function (): void {
+    $rsync = new Rsync()
+        ->exclude('*.log')
+        ->exclude('*.tmp');
+
+    $options = $rsync->getOptions();
+    $exclude = $options->get('exclude');
+
+    expect($exclude->values)->toBe(['*.log', '*.tmp']);
+});
+
+it('excludeDir called twice merges patterns', function (): void {
+    $rsync = new Rsync()
+        ->excludeDir('vendor')
+        ->excludeDir('node_modules');
+
+    $options = $rsync->getOptions();
+    $excludeDir = $options->get('exclude-dir');
+
+    expect($excludeDir->values)->toBe(['vendor', 'node_modules']);
+});
+
+it('include called twice merges patterns', function (): void {
+    $rsync = new Rsync()
+        ->include('*.php')
+        ->include('*.json');
+
+    $options = $rsync->getOptions();
+    $include = $options->get('include');
+
+    expect($include->values)->toBe(['*.php', '*.json']);
+});

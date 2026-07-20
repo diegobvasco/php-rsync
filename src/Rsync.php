@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-use DiegoVasconcelos\Rsync\Concerns\HasFilesystem;
+use DiegoVasconcelos\Rsync\Concerns\DirectoryCleanup;
+use DiegoVasconcelos\Rsync\Concerns\FileOperations;
+use DiegoVasconcelos\Rsync\Concerns\FileScanner;
+use DiegoVasconcelos\Rsync\Concerns\GlobMatcher;
 use InvalidArgumentException;
 
 class Rsync
 {
-    use HasFilesystem;
+    use DirectoryCleanup;
+    use FileOperations;
+    use FileScanner;
+    use GlobMatcher;
 
     private ?string $source = null;
 
@@ -570,34 +576,14 @@ class Rsync
     {
         $parts = ['rsync'];
 
-        // Flags
         foreach ($this->flags as $flag) {
             $parts[] = $flag->name;
         }
 
-        // Single-value options
-        $singleValueOptions = ['exclude-from', 'include-from', 'backup-dir', 'suffix', 'max-size', 'min-size'];
-        foreach ($singleValueOptions as $key) {
-            if ($this->options->has($key)) {
-                $option = $this->options->get($key);
-                if ($option->values !== []) {
-                    $parts[] = '--'.$key.'='.sprintf("'%s'", $option->values[0]);
-                }
-            }
+        foreach ($this->options as $option) {
+            $parts[] = $option->toCommandString();
         }
 
-        // Array options
-        $arrayOptions = ['exclude', 'include', 'exclude-dir'];
-        foreach ($arrayOptions as $key) {
-            if ($this->options->has($key)) {
-                $option = $this->options->get($key);
-                foreach ($option->values as $value) {
-                    $parts[] = '--'.$key.'='.sprintf("'%s'", $value);
-                }
-            }
-        }
-
-        // Source and destination
         if ($this->source !== null) {
             $parts[] = sprintf("'%s'", $this->source);
         }
@@ -659,9 +645,9 @@ class Rsync
         $source = $this->source ?? '';
         $destination = $this->destination ?? '';
 
-        if ($this->flags->contains('--dry-run')) {
-            return $this->dryRunSync($source, $destination);
-        }
+        $operation = $this->flags->contains('--dry-run')
+            ? new DryRunSyncOperation()
+            : new RealSyncOperation($this->output);
 
         ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles, 'destinationFiles' => $destinationFiles] =
             $this->scanFiles($source, $destination);
@@ -672,73 +658,29 @@ class Rsync
         $skipped = [];
         $deleted = [];
 
-        // Copy new or updated files
         foreach ($sourceFiles as $relativePath => $sourceFile) {
             $destinationFile = $destinationFiles[$relativePath] ?? null;
 
             if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
                 $skipped[] = $sourceFile;
-                $this->output?->skipped($sourceFile);
+                $operation->notifySkipped($sourceFile);
 
                 continue;
             }
 
             $destPath = $destination.DIRECTORY_SEPARATOR.$relativePath;
 
-            if ($this->copyFile($sourceFile->absolutePath, $destPath)) {
+            if ($operation->copyFile($sourceFile->absolutePath, $destPath)) {
                 $copied[] = $sourceFile;
-                $this->output?->copied($sourceFile);
+                $operation->notifyCopied($sourceFile);
             }
         }
 
-        // Delete files not in source
         if ($this->shouldDelete()) {
-            $deleted = $this->deleteFiles($sourceFiles, $destinationFiles);
+            $deleted = $this->deleteFiles($sourceFiles, $destinationFiles, $operation);
         }
 
-        // Cleanup empty directories
-        if ($this->shouldCleanupEmptyDirs()) {
-            $this->cleanupEmptyDirectories();
-        }
-
-        return new Result(
-            copied: $copied,
-            deleted: $deleted,
-            skipped: [...$skipped, ...array_values($excludedFiles)],
-        );
-    }
-
-    /**
-     * Simulate sync for dry-run mode without making changes.
-     */
-    private function dryRunSync(string $source, string $destination): Result
-    {
-        ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles, 'destinationFiles' => $destinationFiles] =
-            $this->scanFiles($source, $destination);
-
-        $useChecksum = $this->flags->contains('--checksum');
-
-        $copied = [];
-        $skipped = [];
-        $deleted = [];
-
-        // Determine what would be copied
-        foreach ($sourceFiles as $relativePath => $sourceFile) {
-            $destinationFile = $destinationFiles[$relativePath] ?? null;
-
-            if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
-                $skipped[] = $sourceFile;
-
-                continue;
-            }
-
-            $copied[] = $sourceFile;
-        }
-
-        // Determine what would be deleted
-        if ($this->shouldDelete()) {
-            $deleted = $this->determineFilesToDelete($sourceFiles, $destinationFiles);
-        }
+        $this->cleanupEmptyDirectories();
 
         return new Result(
             copied: $copied,
@@ -772,7 +714,7 @@ class Rsync
      * @param  array<string, FileInfo>  $destinationFiles
      * @return list<FileInfo>
      */
-    private function deleteFiles(array $sourceFiles, array $destinationFiles): array
+    private function deleteFiles(array $sourceFiles, array $destinationFiles, SyncOperationInterface $operation): array
     {
         $deleted = [];
         $excludes = $this->getEffectiveExcludes();
@@ -786,37 +728,10 @@ class Rsync
                 continue;
             }
 
-            if ($this->deleteFile($destinationFile->absolutePath)) {
+            if ($operation->deleteFile($destinationFile->absolutePath)) {
                 $deleted[] = $destinationFile;
-                $this->output?->deleted($destinationFile);
+                $operation->notifyDeleted($destinationFile);
             }
-        }
-
-        return $deleted;
-    }
-
-    /**
-     * Determine which destination files would be deleted (dry-run).
-     *
-     * @param  array<string, FileInfo>  $sourceFiles
-     * @param  array<string, FileInfo>  $destinationFiles
-     * @return list<FileInfo>
-     */
-    private function determineFilesToDelete(array $sourceFiles, array $destinationFiles): array
-    {
-        $deleted = [];
-        $excludes = $this->getEffectiveExcludes();
-
-        foreach ($destinationFiles as $relativePath => $destinationFile) {
-            if (isset($sourceFiles[$relativePath])) {
-                continue;
-            }
-
-            if ($this->matchesExclusion($relativePath, $excludes)) {
-                continue;
-            }
-
-            $deleted[] = $destinationFile;
         }
 
         return $deleted;
@@ -827,20 +742,24 @@ class Rsync
      */
     private function shouldDelete(): bool
     {
-        return $this->flags->contains('--delete')
-            || $this->flags->contains('--delete-before')
-            || $this->flags->contains('--delete-after')
-            || $this->flags->contains('--delete-excluded');
+        if ($this->flags->contains('--delete')) {
+            return true;
+        }
+
+        if ($this->flags->contains('--delete-before')) {
+            return true;
+        }
+
+        if ($this->flags->contains('--delete-after')) {
+            return true;
+        }
+
+        return $this->flags->contains('--delete-excluded');
     }
 
     /**
      * Check if empty directory cleanup should be performed.
      */
-    private function shouldCleanupEmptyDirs(): bool
-    {
-        return ! $this->flags->contains('--no-empty-dirs');
-    }
-
     /**
      * Get effective excludes combining skip() patterns and exclude() patterns.
      *
@@ -887,33 +806,5 @@ class Rsync
     protected function isReadable(string $path): bool
     {
         return is_readable($path);
-    }
-
-    /**
-     * Remove empty directories from destination after sync.
-     */
-    private function cleanupEmptyDirectories(): void
-    {
-        $destination = $this->destination ?? '';
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($destination, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST,
-        );
-
-        foreach ($iterator as $item) {
-            /** @var \SplFileInfo $item */
-            if ($item->isDir() && $this->isEmptyDirectory($item->getPathname())) {
-                rmdir($item->getPathname());
-            }
-        }
-    }
-
-    /**
-     * Check if a directory is empty.
-     */
-    private function isEmptyDirectory(string $path): bool
-    {
-        return is_dir($path) && count(scandir($path)) === 2; // Only . and ..
     }
 }
