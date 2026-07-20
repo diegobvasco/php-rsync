@@ -1,4 +1,0 @@
-{
-    "$schema": "/config/extensions/phpactor.vscode-phpactor-1.7.6-universal/vendor/phpactor/phpactor/phpactor.schema.json",
-    "language_server_phpstan.enabled": false
-}
