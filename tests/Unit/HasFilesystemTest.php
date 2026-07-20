@@ -13,8 +13,8 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-    deleteFilesystemTestDirectory($this->sourceDir);
-    deleteFilesystemTestDirectory($this->destDir);
+    deleteTestDirectory($this->sourceDir);
+    deleteTestDirectory($this->destDir);
 });
 
 it('scanAllFiles returns empty array for non-existent directory', function (): void {
@@ -52,6 +52,31 @@ it('deleteFile returns false for non-existent path', function (): void {
     expect($result)->toBeFalse();
 });
 
+it('copyFile copies file to destination', function (): void {
+    mkdir($this->sourceDir, recursive: true);
+    mkdir($this->destDir, recursive: true);
+    file_put_contents($this->sourceDir.'/file.txt', 'content');
+
+    $dest = $this->destDir.'/file.txt';
+
+    $result = $this->helper->doCopyFile($this->sourceDir.'/file.txt', $dest);
+
+    expect($result)->toBeTrue()
+        ->and(file_get_contents($dest))->toBe('content');
+});
+
+it('copyFile creates missing parent directory', function (): void {
+    mkdir($this->sourceDir, recursive: true);
+    file_put_contents($this->sourceDir.'/file.txt', 'content');
+
+    $dest = $this->destDir.'/sub/deep/file.txt';
+
+    $result = $this->helper->doCopyFile($this->sourceDir.'/file.txt', $dest);
+
+    expect($result)->toBeTrue()
+        ->and(file_get_contents($dest))->toBe('content');
+});
+
 it('handles sync when destination directory does not exist yet', function (): void {
     mkdir($this->sourceDir, recursive: true);
     file_put_contents($this->sourceDir.'/file.txt', 'content');
@@ -66,7 +91,7 @@ it('handles sync when destination directory does not exist yet', function (): vo
         ->and(file_get_contents($nonexistentDest.'/file.txt'))->toBe('content');
 
     // Cleanup
-    deleteFilesystemTestDirectory($nonexistentDest);
+    deleteTestDirectory($nonexistentDest);
 });
 
 it('globToRegex handles slash inside character class', function (): void {

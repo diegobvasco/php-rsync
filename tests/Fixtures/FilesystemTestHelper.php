@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
-use DiegoVasconcelos\Rsync\Concerns\HasFilesystem;
+use DiegoVasconcelos\Rsync\Concerns\FileOperations;
+use DiegoVasconcelos\Rsync\Concerns\FileScanner;
+use DiegoVasconcelos\Rsync\Concerns\GlobMatcher;
 use DiegoVasconcelos\Rsync\FileInfo;
 
 class FilesystemTestHelper
 {
-    use HasFilesystem;
+    use FileOperations;
+    use FileScanner;
+    use GlobMatcher;
 
     public function doScanAllFiles(string $path): array
     {
@@ -24,6 +28,11 @@ class FilesystemTestHelper
     public function doGlobToRegex(string $pattern): string
     {
         return $this->globToRegex($pattern);
+    }
+
+    public function doCopyFile(string $from, string $to): bool
+    {
+        return $this->copyFile($from, $to);
     }
 
     public function doShouldSync(FileInfo $source, FileInfo $destination, bool $useChecksum = false): bool

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
+use DiegoVasconcelos\Rsync\Concerns\ByteFormatter;
+
 /**
  * @param  array<int, FileInfo>  $copied
  * @param  array<int, FileInfo>  $deleted
@@ -11,6 +13,8 @@ namespace DiegoVasconcelos\Rsync;
  */
 final readonly class Result
 {
+    use ByteFormatter;
+
     /**
      * @param  array<int, FileInfo>  $copied
      * @param  array<int, FileInfo>  $deleted
@@ -71,30 +75,14 @@ final readonly class Result
     }
 
     /**
-     * Format bytes to human readable size.
-     */
-    private function formatBytes(int $bytes): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-
-        $i = 0;
-        while ($bytes >= 1024 && $i < count($units) - 1) {
-            $bytes /= 1024;
-            $i++;
-        }
-
-        return round($bytes, 2).' '.$units[$i];
-    }
-
-    /**
      * Generate human-readable summary.
      */
     public function summary(): string
     {
         $parts = [];
 
-        $parts[] = 'Copied: '.$this->copiedCount().' files ('.$this->formatBytes($this->totalBytesCopied()).')';
-        $parts[] = 'Deleted: '.$this->deletedCount().' files ('.$this->formatBytes($this->totalBytesDeleted()).')';
+        $parts[] = 'Copied: '.$this->copiedCount().' files ('.self::formatBytes($this->totalBytesCopied()).')';
+        $parts[] = 'Deleted: '.$this->deletedCount().' files ('.self::formatBytes($this->totalBytesDeleted()).')';
         $parts[] = 'Skipped: '.$this->skippedCount().' files';
 
         return implode("\n", $parts);

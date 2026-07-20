@@ -1,6 +1,6 @@
 {
     "name": "diegobvasco/php-rsync",
-    "description": "A skeleton repository for my packages",
+    "description": "A fluent PHP library for building and executing rsync commands",
     "keywords": [
         "php",
         "deploy",

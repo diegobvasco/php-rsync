@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
+use DiegoVasconcelos\Rsync\Concerns\ByteFormatter;
+
 final readonly class FileInfo
 {
+    use ByteFormatter;
+
     public function __construct(
         public string $relativePath,
         public string $absolutePath,
@@ -19,16 +23,7 @@ final readonly class FileInfo
      */
     public function formattedSize(): string
     {
-        $bytes = $this->size;
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-
-        $i = 0;
-        while ($bytes >= 1024 && $i < count($units) - 1) {
-            $bytes /= 1024;
-            $i++;
-        }
-
-        return round($bytes, 2).' '.$units[$i];
+        return self::formatBytes($this->size);
     }
 
     /**
