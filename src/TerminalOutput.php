@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-final class TerminalOutput implements Output
+final readonly class TerminalOutput implements Output
 {
     /** @var resource */
     private mixed $stream;
