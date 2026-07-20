@@ -14,3 +14,5 @@ rector.php         export-ignore
 CHANGELOG.md       export-ignore
 CONTRIBUTING.md    export-ignore
 README.md          export-ignore
+pint.json          export-ignore
+.phpactor.json     export-ignore
