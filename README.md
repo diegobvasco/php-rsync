@@ -86,7 +86,8 @@ $result = (new Rsync())
     ->dryRun()
     ->run();
 
-// No files are actually copied or deleted
+// No files are actually copied or deleted, and the filesystem is never
+// mutated (no copies, no deletions, no empty-directory cleanup).
 echo $result->summary();
 ```
 
@@ -130,10 +131,14 @@ $result->summary();        // Human-readable summary string
 ### `Rsync`
 
 ```php
-new Rsync(?Output $output = null)
+new Rsync(?Output $output = null, ?Filesystem $filesystem = null)
 ```
 
 The optional `Output` interface receives callbacks for each file action during sync. A `TerminalOutput` implementation is included that prints to STDOUT (or a custom stream).
+
+The optional `Filesystem` argument lets you swap the default `LocalFilesystem` (which uses PHP's global FS functions) for any other implementation — useful for testing against `InMemoryFilesystem` or a custom backend. It is backward compatible: `new Rsync()` and `new Rsync($output)` keep working unchanged.
+
+> **Performance:** file checksums are computed lazily — the expensive xxh128 hash only runs in `--checksum` mode (or when you read `$file->checksum`). The destination tree is scanned only when a delete mode is enabled; otherwise each source file is checked against its destination counterpart individually.
 
 #### Core
 
@@ -278,6 +283,20 @@ Defaults to `STDOUT`. Pass a custom stream to redirect output:
 
 ```php
 $output = new TerminalOutput(fopen('php://memory', 'r+'));
+```
+
+### `Filesystem` (interface)
+
+Abstraction over all filesystem operations. The default `LocalFilesystem` wraps PHP's global FS functions; `InMemoryFilesystem` is a disk-less implementation that is handy for tests:
+
+```php
+use DiegoVasconcelos\Rsync\InMemoryFilesystem;
+use DiegoVasconcelos\Rsync\Rsync;
+
+$fs = new InMemoryFilesystem();
+$fs->put('/src/app.php', '<?php echo 1;');
+
+$result = (new Rsync(null, $fs))->copy('/src', '/dest')->run();
 ```
 
 ## Quality

@@ -105,9 +105,9 @@ it('generates human readable summary', function (): void {
 
     $summary = $result->summary();
 
-    expect($summary)->toContain('Copied: 1 files (1 KB)')
-        ->and($summary)->toContain('Deleted: 1 files (512 B)')
-        ->and($summary)->toContain('Skipped: 1 files');
+    expect($summary)->toContain('Copied: 1 file (1 KB)')
+        ->and($summary)->toContain('Deleted: 1 file (512 B)')
+        ->and($summary)->toContain('Skipped: 1 file');
 });
 
 it('handles empty result', function (): void {

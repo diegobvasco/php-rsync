@@ -4,43 +4,47 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-use DiegoVasconcelos\Rsync\Concerns\DirectoryCleanup;
-use DiegoVasconcelos\Rsync\Concerns\FileOperations;
-use DiegoVasconcelos\Rsync\Concerns\FileScanner;
-use DiegoVasconcelos\Rsync\Concerns\GlobMatcher;
 use InvalidArgumentException;
 
-class Rsync
+final class Rsync
 {
-    use DirectoryCleanup;
-    use FileOperations;
-    use FileScanner;
-    use GlobMatcher;
-
     private ?string $source = null;
 
     private ?string $destination = null;
 
-    private FlagCollection $excludes;
+    /** @var list<string> */
+    private array $excludes = [];
 
     private FlagCollection $flags;
 
     private OptionCollection $options;
 
-    public function __construct(private ?Output $output = null)
+    private readonly Filesystem $fs;
+
+    private readonly GlobMatcher $matcher;
+
+    private readonly FileScanner $scanner;
+
+    private readonly DirectoryCleaner $cleaner;
+
+    private readonly Comparator $comparator;
+
+    public function __construct(private readonly ?Output $output = null, ?Filesystem $filesystem = null)
     {
-        $this->excludes = new FlagCollection();
         $this->flags = new FlagCollection();
         $this->options = new OptionCollection();
+        $this->fs = $filesystem ?? new LocalFilesystem();
+        $this->matcher = new GlobMatcher();
+        $this->scanner = new FileScanner($this->fs, $this->matcher);
+        $this->cleaner = new DirectoryCleaner($this->fs);
+        $this->comparator = new Comparator();
     }
 
-    /**
-     * Set the source and destination directories.
-     */
+    /** Set the source and destination directories. */
     public function copy(string $source, string $destination): self
     {
-        $this->source = rtrim($source, DIRECTORY_SEPARATOR);
-        $this->destination = rtrim($destination, DIRECTORY_SEPARATOR);
+        $this->source = rtrim($source, '/\\');
+        $this->destination = rtrim($destination, '/\\');
 
         return $this;
     }
@@ -52,11 +56,37 @@ class Rsync
      */
     public function skip(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        foreach ($patterns as $pattern) {
-            $this->excludes = $this->excludes->add(new Flag($pattern));
+        foreach ((array) $patterns as $pattern) {
+            $this->excludes = [...$this->excludes, $pattern];
         }
+
+        return $this;
+    }
+
+    /** Enable a flag and return $this for chaining. */
+    private function setFlag(FlagType $flag): self
+    {
+        $this->flags = $this->flags->addFlag($flag);
+
+        return $this;
+    }
+
+    /**
+     * Append values to a (possibly existing) option and return $this.
+     *
+     * @param  string|array<string>  $values
+     */
+    private function addOptionValues(string $key, string|array $values): self
+    {
+        $option = $this->options->has($key)
+            ? $this->options->get($key)
+            : new Option($key);
+
+        foreach ((array) $values as $value) {
+            $option = $option->addValue($value);
+        }
+
+        $this->options = $this->options->remove($key)->add($option);
 
         return $this;
     }
@@ -69,9 +99,7 @@ class Rsync
      */
     public function delete(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE);
     }
 
     /**
@@ -80,9 +108,7 @@ class Rsync
      */
     public function recursive(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::RECURSIVE);
-
-        return $this;
+        return $this->setFlag(FlagType::RECURSIVE);
     }
 
     /**
@@ -91,101 +117,63 @@ class Rsync
      */
     public function archive(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::ARCHIVE);
-
-        return $this;
+        return $this->setFlag(FlagType::ARCHIVE);
     }
 
     // ─── Metadata Preservation ────────────────────────────────────
 
-    /**
-     * Preserve modification times (--times / -t).
-     */
+    /** Preserve modification times (--times / -t). */
     public function times(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::TIMES);
-
-        return $this;
+        return $this->setFlag(FlagType::TIMES);
     }
 
-    /**
-     * Preserve permissions (--perms / -p).
-     */
+    /** Preserve permissions (--perms / -p). */
     public function perms(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::PERMS);
-
-        return $this;
+        return $this->setFlag(FlagType::PERMS);
     }
 
-    /**
-     * Preserve owner (--owner / -o).
-     */
+    /** Preserve owner (--owner / -o). */
     public function owner(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::OWNER);
-
-        return $this;
+        return $this->setFlag(FlagType::OWNER);
     }
 
-    /**
-     * Preserve group (--group / -g).
-     */
+    /** Preserve group (--group / -g). */
     public function group(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::GROUP);
-
-        return $this;
+        return $this->setFlag(FlagType::GROUP);
     }
 
-    /**
-     * Preserve ACLs (--acls / -A).
-     */
+    /** Preserve ACLs (--acls / -A). */
     public function acls(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::ACLS);
-
-        return $this;
+        return $this->setFlag(FlagType::ACLS);
     }
 
-    /**
-     * Preserve extended attributes (--xattrs / -X).
-     */
+    /** Preserve extended attributes (--xattrs / -X). */
     public function xattrs(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::XTRAS);
-
-        return $this;
+        return $this->setFlag(FlagType::XATTRS);
     }
 
-    /**
-     * Preserve device files (--devices / -D).
-     */
+    /** Preserve device files (--devices / -D). */
     public function devices(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DEVICES);
-
-        return $this;
+        return $this->setFlag(FlagType::DEVICES);
     }
 
-    /**
-     * Preserve special files (--specials / -S).
-     */
+    /** Preserve special files (--specials / -S). */
     public function specials(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::SPECIALS);
-
-        return $this;
+        return $this->setFlag(FlagType::SPECIALS);
     }
 
-    /**
-     * Don't map uid/gid values (--numeric-ids).
-     */
+    /** Don't map uid/gid values (--numeric-ids). */
     public function numericIds(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::NUMERIC_IDS);
-
-        return $this;
+        return $this->setFlag(FlagType::NUMERIC_IDS);
     }
 
     // ─── Comparison ───────────────────────────────────────────────
@@ -196,39 +184,25 @@ class Rsync
      */
     public function checksum(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::CHECKSUM);
-
-        return $this;
+        return $this->setFlag(FlagType::CHECKSUM);
     }
 
-    /**
-     * Don't skip files that match size and time (--ignore-times / -I).
-     */
+    /** Don't skip files that match size and time (--ignore-times / -I). */
     public function ignoreTimes(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::IGNORE_TIMES);
-
-        return $this;
+        return $this->setFlag(FlagType::IGNORE_TIMES);
     }
 
-    /**
-     * Skip files that match size only (--size-only).
-     */
+    /** Skip files that match size only (--size-only). */
     public function sizeOnly(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::SIZE_ONLY);
-
-        return $this;
+        return $this->setFlag(FlagType::SIZE_ONLY);
     }
 
-    /**
-     * Skip files that are newer on the receiver (--update / -u).
-     */
+    /** Skip files that are newer on the receiver (--update / -u). */
     public function update(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::UPDATE);
-
-        return $this;
+        return $this->setFlag(FlagType::UPDATE);
     }
 
     // ─── Excludes / Includes ──────────────────────────────────────
@@ -240,24 +214,10 @@ class Rsync
      */
     public function exclude(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        $option = $this->options->has('exclude')
-            ? $this->options->get('exclude')
-            : new Option('exclude');
-
-        foreach ($patterns as $pattern) {
-            $option = $option->addValue($pattern);
-        }
-
-        $this->options = $this->options->remove('exclude')->add($option);
-
-        return $this;
+        return $this->addOptionValues('exclude', $patterns);
     }
 
-    /**
-     * Read exclude patterns from file (--exclude-from).
-     */
+    /** Read exclude patterns from file (--exclude-from). */
     public function excludeFrom(string $file): self
     {
         $this->options = $this->options->remove('exclude-from')->add(new Option('exclude-from', [$file]));
@@ -272,19 +232,7 @@ class Rsync
      */
     public function excludeDir(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        $option = $this->options->has('exclude-dir')
-            ? $this->options->get('exclude-dir')
-            : new Option('exclude-dir');
-
-        foreach ($patterns as $pattern) {
-            $option = $option->addValue($pattern);
-        }
-
-        $this->options = $this->options->remove('exclude-dir')->add($option);
-
-        return $this;
+        return $this->addOptionValues('exclude-dir', $patterns);
     }
 
     /**
@@ -294,24 +242,10 @@ class Rsync
      */
     public function include(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        $option = $this->options->has('include')
-            ? $this->options->get('include')
-            : new Option('include');
-
-        foreach ($patterns as $pattern) {
-            $option = $option->addValue($pattern);
-        }
-
-        $this->options = $this->options->remove('include')->add($option);
-
-        return $this;
+        return $this->addOptionValues('include', $patterns);
     }
 
-    /**
-     * Read include patterns from file (--include-from).
-     */
+    /** Read include patterns from file (--include-from). */
     public function includeFrom(string $file): self
     {
         $this->options = $this->options->remove('include-from')->add(new Option('include-from', [$file]));
@@ -319,31 +253,21 @@ class Rsync
         return $this;
     }
 
-    /**
-     * Remove empty directories from file list (--prune-empty-dirs).
-     */
+    /** Remove empty directories from file list (--prune-empty-dirs). */
     public function pruneEmptyDirs(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::PRUNE_EMPTY_DIRS);
-
-        return $this;
+        return $this->setFlag(FlagType::PRUNE_EMPTY_DIRS);
     }
 
     // ─── Backup ───────────────────────────────────────────────────
 
-    /**
-     * Make backups of changed files (--backup).
-     */
+    /** Make backups of changed files (--backup). */
     public function backup(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::BACKUP);
-
-        return $this;
+        return $this->setFlag(FlagType::BACKUP);
     }
 
-    /**
-     * Set backup directory (--backup-dir).
-     */
+    /** Set backup directory (--backup-dir). */
     public function backupDir(string $dir): self
     {
         $this->options = $this->options->remove('backup-dir')->add(new Option('backup-dir', [$dir]));
@@ -351,9 +275,7 @@ class Rsync
         return $this;
     }
 
-    /**
-     * Set backup suffix (--suffix).
-     */
+    /** Set backup suffix (--suffix). */
     public function suffix(string $suffix): self
     {
         $this->options = $this->options->remove('suffix')->add(new Option('suffix', [$suffix]));
@@ -363,54 +285,34 @@ class Rsync
 
     // ─── Symlinks / Hardlinks ─────────────────────────────────────
 
-    /**
-     * Copy symlinks as symlinks (--links / -l).
-     */
+    /** Copy symlinks as symlinks (--links / -l). */
     public function links(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::LINKS);
     }
 
-    /**
-     * Transform symlinks to referent files (--copy-links / -L).
-     */
+    /** Transform symlinks to referent files (--copy-links / -L). */
     public function copyLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::COPY_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::COPY_LINKS);
     }
 
-    /**
-     * Transform unsafe symlinks to referent files only in directories (--copy-unsafe-links).
-     */
+    /** Transform unsafe symlinks to referent files only in directories (--copy-unsafe-links). */
     public function copyUnsafeLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::COPY_UNSAFE_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::COPY_UNSAFE_LINKS);
     }
 
-    /**
-     * Ignore symlinks that go outside tree (--safe-links).
-     */
+    /** Ignore symlinks that go outside tree (--safe-links). */
     public function safeLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::SAFE_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::SAFE_LINKS);
     }
 
-    /**
-     * Preserve hard links (--hard-links / -H).
-     */
+    /** Preserve hard links (--hard-links / -H). */
     public function hardLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::HARD_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::HARD_LINKS);
     }
 
     // ─── Size Limits ──────────────────────────────────────────────
@@ -443,141 +345,91 @@ class Rsync
 
     // ─── Behavior ─────────────────────────────────────────────────
 
-    /**
-     * Show what would be done without doing it (--dry-run / -n).
-     */
+    /** Show what would be done without doing it (--dry-run / -n). */
     public function dryRun(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DRY_RUN);
-
-        return $this;
+        return $this->setFlag(FlagType::DRY_RUN);
     }
 
-    /**
-     * Force deletion of non-empty directories (--force / -f).
-     */
+    /** Force deletion of non-empty directories (--force / -f). */
     public function force(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::FORCE);
-
-        return $this;
+        return $this->setFlag(FlagType::FORCE);
     }
 
-    /**
-     * Remove source files after successful transfer (--remove-source-files).
-     */
+    /** Remove source files after successful transfer (--remove-source-files). */
     public function removeSourceFiles(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::REMOVE_SOURCE_FILES);
-
-        return $this;
+        return $this->setFlag(FlagType::REMOVE_SOURCE_FILES);
     }
 
     // ─── Output ───────────────────────────────────────────────────
 
-    /**
-     * Verbose output (--verbose / -v).
-     */
+    /** Verbose output (--verbose / -v). */
     public function verbose(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::VERBOSE);
-
-        return $this;
+        return $this->setFlag(FlagType::VERBOSE);
     }
 
-    /**
-     * Suppress output (--quiet / -q).
-     */
+    /** Suppress output (--quiet / -q). */
     public function quiet(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::QUIET);
-
-        return $this;
+        return $this->setFlag(FlagType::QUIET);
     }
 
-    /**
-     * Show progress (--progress).
-     */
+    /** Show progress (--progress). */
     public function progress(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::PROGRESS);
-
-        return $this;
+        return $this->setFlag(FlagType::PROGRESS);
     }
 
-    /**
-     * Show statistics (--stats).
-     */
+    /** Show statistics (--stats). */
     public function stats(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::STATS);
-
-        return $this;
+        return $this->setFlag(FlagType::STATS);
     }
 
-    /**
-     * Show itemized changes (--itemize-changes / -i).
-     */
+    /** Show itemized changes (--itemize-changes / -i). */
     public function itemizeChanges(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::ITEMIZE_CHANGES);
-
-        return $this;
+        return $this->setFlag(FlagType::ITEMIZE_CHANGES);
     }
 
-    /**
-     * Human-readable numbers (--human-readable / -h).
-     */
+    /** Human-readable numbers (--human-readable / -h). */
     public function humanReadable(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::HUMAN_READABLE);
-
-        return $this;
+        return $this->setFlag(FlagType::HUMAN_READABLE);
     }
 
     // ─── Delete Modes ─────────────────────────────────────────────
 
-    /**
-     * Delete before transfer (--delete-before).
-     */
+    /** Delete before transfer (--delete-before). */
     public function deleteBefore(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE_BEFORE);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE_BEFORE);
     }
 
-    /**
-     * Delete after transfer (--delete-after).
-     */
+    /** Delete after transfer (--delete-after). */
     public function deleteAfter(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE_AFTER);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE_AFTER);
     }
 
-    /**
-     * Delete excluded files from destination (--delete-excluded).
-     */
+    /** Delete excluded files from destination (--delete-excluded). */
     public function deleteExcluded(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE_EXCLUDED);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE_EXCLUDED);
     }
 
     // ─── Command Generation ───────────────────────────────────────
 
-    /**
-     * Generate equivalent rsync shell command for debugging.
-     */
+    /** Generate equivalent rsync shell command for debugging. */
     public function toCommand(): string
     {
         $parts = ['rsync'];
 
         foreach ($this->flags as $flag) {
-            $parts[] = $flag->name;
+            $parts[] = $flag->value;
         }
 
         foreach ($this->options as $option) {
@@ -585,72 +437,71 @@ class Rsync
         }
 
         if ($this->source !== null) {
-            $parts[] = sprintf("'%s'", $this->source);
+            $parts[] = $this->escapeShellPath($this->source);
         }
 
         if ($this->destination !== null) {
-            $parts[] = sprintf("'%s'", $this->destination);
+            $parts[] = $this->escapeShellPath($this->destination);
         }
 
         return implode(' ', $parts);
     }
 
-    /**
-     * Reset all flags and options.
-     */
+    /** Escape a path for use in a single-quoted shell argument (POSIX style). */
+    private function escapeShellPath(string $path): string
+    {
+        return "'".str_replace("'", "'\\''", $path)."'";
+    }
+
+    /** Reset all flags and options. */
     public function reset(): self
     {
         $this->flags = new FlagCollection();
         $this->options = new OptionCollection();
-        $this->excludes = new FlagCollection();
+        $this->excludes = [];
         $this->source = null;
         $this->destination = null;
 
         return $this;
     }
 
-    /**
-     * Get the flags collection.
-     */
+    /** Get the flags collection. */
     public function getFlags(): FlagCollection
     {
         return $this->flags;
     }
 
-    /**
-     * Get the options collection.
-     */
+    /** Get the options collection. */
     public function getOptions(): OptionCollection
     {
         return $this->options;
     }
 
     /**
-     * Get the excludes collection.
+     * Get the exclude patterns added via skip().
+     *
+     * @return list<string>
      */
-    public function getExcludes(): FlagCollection
+    public function getExcludes(): array
     {
         return $this->excludes;
     }
 
     // ─── Core Execution ───────────────────────────────────────────
 
-    /**
-     * Execute the sync operation and return a report.
-     */
+    /** Execute the sync operation and return a report. */
     public function run(): Result
     {
         $this->validateConfiguration();
 
-        $source = $this->source ?? '';
         $destination = $this->destination ?? '';
 
         $operation = $this->flags->contains(FlagType::DRY_RUN)
             ? new DryRunSyncOperation()
-            : new RealSyncOperation($this->output);
+            : new RealSyncOperation($this->output, $this->fs);
 
-        ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles, 'destinationFiles' => $destinationFiles] =
-            $this->scanFiles($source, $destination);
+        ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles] = $this->scanSource();
+        $destinationFiles = $this->shouldDelete() ? $this->scanner->scan($destination) : [];
 
         $useChecksum = $this->flags->contains(FlagType::CHECKSUM);
 
@@ -659,16 +510,17 @@ class Rsync
         $deleted = [];
 
         foreach ($sourceFiles as $relativePath => $sourceFile) {
-            $destinationFile = $destinationFiles[$relativePath] ?? null;
+            $destinationFile = $destinationFiles[$relativePath]
+                ?? $this->scanner->fileAt($destination, $relativePath);
 
-            if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
+            if ($destinationFile !== null && ! $this->comparator->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
                 $skipped[] = $sourceFile;
                 $operation->notifySkipped($sourceFile);
 
                 continue;
             }
 
-            $destPath = $destination.DIRECTORY_SEPARATOR.$relativePath;
+            $destPath = $destination.'/'.$relativePath;
 
             if ($operation->copyFile($sourceFile->absolutePath, $destPath)) {
                 $copied[] = $sourceFile;
@@ -680,7 +532,10 @@ class Rsync
             $deleted = $this->deleteFiles($sourceFiles, $destinationFiles, $operation);
         }
 
-        $this->cleanupEmptyDirectories();
+        // Dry-run must never mutate the filesystem, so skip directory cleanup entirely.
+        if (! $this->flags->contains(FlagType::DRY_RUN)) {
+            $this->cleaner->cleanup($destination);
+        }
 
         return new Result(
             copied: $copied,
@@ -690,20 +545,23 @@ class Rsync
     }
 
     /**
-     * Scan source and destination files, applying exclusions to source.
+     * Scan source files, splitting them into included/excluded sets.
      *
-     * @return array{sourceFiles: array<string, FileInfo>, excludedFiles: array<string, FileInfo>, destinationFiles: array<string, FileInfo>}
+     * @return array{sourceFiles: array<string, FileInfo>, excludedFiles: array<string, FileInfo>}
      */
-    private function scanFiles(string $source, string $destination): array
+    private function scanSource(): array
     {
-        $allSourceFiles = $this->scanAllFiles($source);
-        ['included' => $sourceFiles, 'excluded' => $excludedFiles] = $this->filterByExclusions($allSourceFiles, $this->getEffectiveExcludes());
-        $destinationFiles = $this->scanAllFiles($destination);
+        $source = $this->source ?? '';
+        $excludes = $this->getEffectiveExcludes();
+
+        ['included' => $sourceFiles, 'excluded' => $excludedFiles] = $this->scanner->partition(
+            $this->scanner->scan($source),
+            $excludes,
+        );
 
         return [
             'sourceFiles' => $sourceFiles,
             'excludedFiles' => $excludedFiles,
-            'destinationFiles' => $destinationFiles,
         ];
     }
 
@@ -724,7 +582,7 @@ class Rsync
                 continue;
             }
 
-            if ($this->matchesExclusion($relativePath, $excludes)) {
+            if ($excludes !== [] && $this->matcher->matches($relativePath, $excludes)) {
                 continue;
             }
 
@@ -737,9 +595,7 @@ class Rsync
         return $deleted;
     }
 
-    /**
-     * Check if deletion should be performed.
-     */
+    /** Check if deletion should be performed. */
     private function shouldDelete(): bool
     {
         if ($this->flags->contains(FlagType::DELETE)) {
@@ -758,16 +614,13 @@ class Rsync
     }
 
     /**
-     * Check if empty directory cleanup should be performed.
-     */
-    /**
      * Get effective excludes combining skip() patterns and exclude() patterns.
      *
      * @return list<string>
      */
     private function getEffectiveExcludes(): array
     {
-        $excludes = $this->excludes->toArray();
+        $excludes = $this->excludes;
 
         if ($this->options->has('exclude')) {
             $excludes = array_values(array_merge($excludes, $this->options->get('exclude')->values));
@@ -782,29 +635,19 @@ class Rsync
         return $excludes;
     }
 
-    /**
-     * Validate that required configuration is set.
-     */
+    /** Validate that required configuration is set. */
     private function validateConfiguration(): void
     {
         if ($this->source === null || $this->destination === null) {
             throw new InvalidArgumentException('Source and destination must be set using copy() method.');
         }
 
-        if (! is_dir($this->source)) {
+        if (! $this->fs->isDir($this->source)) {
             throw new InvalidArgumentException('Source directory does not exist: '.$this->source);
         }
 
-        if (! $this->isReadable($this->source)) {
+        if (! $this->fs->isReadable($this->source)) {
             throw new InvalidArgumentException('Source directory is not readable: '.$this->source);
         }
-    }
-
-    /**
-     * Check if a path is readable. Protected to allow testing on platforms where chmod doesn't work.
-     */
-    protected function isReadable(string $path): bool
-    {
-        return is_readable($path);
     }
 }

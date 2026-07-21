@@ -43,3 +43,9 @@ it('converts single value to string', function (): void {
 
     expect((string) $option)->toBe("--backup-dir='/tmp/backup'");
 });
+
+it('escapes single quotes in values', function (): void {
+    $option = new Option('exclude', ["it's/*.log"]);
+
+    expect((string) $option)->toBe("--exclude='it'\\''s/*.log'");
+});

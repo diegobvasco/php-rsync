@@ -36,7 +36,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Miscellaneous Chores
 
-* update image source in README to use webp format ([bcc61c1](https://github.com/diegobvasco/php-rsync/commit/bcc61c1b23b715faba576c12fe7b034a25e3b5e2))
-
-## [Unreleased]
-- Adds first version
+* update image source in README to use webp format ([bcc61c1](https://github.com/diegobvasco/php-rsync/commit/bcc61c1b23b7155faba576c12fe7b034a25e3b5e2))

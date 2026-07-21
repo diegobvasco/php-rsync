@@ -6,19 +6,22 @@ namespace DiegoVasconcelos\Rsync\Concerns;
 
 trait ByteFormatter
 {
-    /**
-     * Format bytes to human readable size.
-     */
+    private const int KIB = 1024;
+
+    /** @var list<string> */
+    private const array UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+    /** Format bytes to human readable size. */
     public static function formatBytes(int $bytes): string
     {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-
+        $value = (float) $bytes;
         $i = 0;
-        while ($bytes >= 1024 && $i < count($units) - 1) {
-            $bytes /= 1024;
+
+        while ($value >= self::KIB && $i < count(self::UNITS) - 1) {
+            $value /= self::KIB;
             $i++;
         }
 
-        return round($bytes, 2).' '.$units[$i];
+        return round($value, 2).' '.self::UNITS[$i];
     }
 }

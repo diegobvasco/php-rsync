@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-use DiegoVasconcelos\Rsync\Concerns\AbstractCollection;
+use BadMethodCallException;
+use DiegoVasconcelos\Rsync\Support\AbstractCollection;
 use JsonSerializable;
+use OutOfBoundsException;
+use Override;
+use Stringable;
 
 /**
  * Immutable collection of Option objects.
@@ -14,12 +18,12 @@ use JsonSerializable;
  *
  * @extends AbstractCollection<Option>
  */
-final readonly class OptionCollection extends AbstractCollection implements \Stringable, JsonSerializable
+final readonly class OptionCollection extends AbstractCollection implements JsonSerializable, Stringable
 {
     public function add(mixed $item): static
     {
         if (! $item instanceof Option) {
-            throw new \BadMethodCallException('OptionCollection only accepts Option objects.');
+            throw new BadMethodCallException('OptionCollection only accepts Option objects.');
         }
 
         // Merge with existing option of same key
@@ -68,9 +72,7 @@ final readonly class OptionCollection extends AbstractCollection implements \Str
         return new self($filtered);
     }
 
-    /**
-     * @param  callable(Option, int): bool  $callback
-     */
+    /** @param  callable(Option, int): bool  $callback */
     public function filter(callable $callback): static
     {
         /** @var array<int, Option> $filtered */
@@ -94,18 +96,11 @@ final readonly class OptionCollection extends AbstractCollection implements \Str
         return array_map($callback, $this->items, array_keys($this->items));
     }
 
-    /**
-     * Get an option by key.
-     */
+    /** Get an option by key. */
     public function get(string $key): Option
     {
-        foreach ($this->items as $option) {
-            if ($option->key === $key) {
-                return $option;
-            }
-        }
-
-        throw new \OutOfBoundsException(sprintf("Option '%s' not found.", $key));
+        return array_find($this->items, fn (Option $option): bool => $option->key === $key)
+            ?? throw new OutOfBoundsException(sprintf("Option '%s' not found.", $key));
     }
 
     public function has(string $key): bool
@@ -144,6 +139,7 @@ final readonly class OptionCollection extends AbstractCollection implements \Str
         return $result;
     }
 
+    #[Override]
     public function __toString(): string
     {
         return implode(' ', array_map(
@@ -152,9 +148,8 @@ final readonly class OptionCollection extends AbstractCollection implements \Str
         ));
     }
 
-    /**
-     * @return array<string, string|array<int, string>>
-     */
+    /** @return array<string, string|array<int, string>> */
+    #[Override]
     public function jsonSerialize(): array
     {
         return $this->toArray();

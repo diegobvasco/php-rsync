@@ -10,8 +10,11 @@ return RectorConfig::configure()
         __DIR__.'/src',
         __DIR__.'/tests',
     ])
-    ->withSkip([
+    ->withRules([
         AddOverrideAttributeToOverriddenMethodsRector::class,
+    ])
+    ->withConfiguredRule(AddOverrideAttributeToOverriddenMethodsRector::class, [
+        AddOverrideAttributeToOverriddenMethodsRector::ADD_TO_INTERFACE_METHODS => true,
     ])
     ->withPreparedSets(
         deadCode: true,

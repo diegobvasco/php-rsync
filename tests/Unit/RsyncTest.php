@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use DiegoVasconcelos\Rsync\FlagType;
+use DiegoVasconcelos\Rsync\LocalFilesystem;
 use DiegoVasconcelos\Rsync\Rsync;
+use Tests\Support\FilesystemDecorator;
 
 beforeEach(function (): void {
     $this->sourceDir = base_tests_dir('/deploy_sync_test_source_'.uniqid());
@@ -168,7 +171,7 @@ it('generates human readable summary', function (): void {
 
     $summary = $result->summary();
 
-    expect($summary)->toContain('Copied: 1 files')
+    expect($summary)->toContain('Copied: 1 file')
         ->and($summary)->toContain('Deleted: 0 files')
         ->and($summary)->toContain('Skipped: 0 files');
 });
@@ -216,6 +219,18 @@ it('removes empty directories after sync', function (): void {
         ->run();
 
     expect(is_dir($this->destDir.'/old_empty_dir'))->toBeFalse();
+});
+
+it('does not remove empty directories in dry-run mode', function (): void {
+    mkdir($this->destDir.'/already_empty_dir', recursive: true);
+
+    new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->dryRun()
+        ->run();
+
+    // Dry-run must not mutate the filesystem: a pre-existing empty directory must remain.
+    expect(is_dir($this->destDir.'/already_empty_dir'))->toBeTrue();
 });
 
 it('skips files matching ? wildcard pattern', function (): void {
@@ -315,13 +330,15 @@ it('handles unreadable source directory', function (): void {
     $unreadableDir = $this->sourceDir.'/unreadable';
     mkdir($unreadableDir);
 
-    $rsync = new class() extends Rsync
+    $fs = new class(new LocalFilesystem()) extends FilesystemDecorator
     {
-        protected function isReadable(string $path): bool
+        public function isReadable(string $path): bool
         {
             return false;
         }
     };
+
+    $rsync = new Rsync(null, $fs);
 
     try {
         $result = $rsync
@@ -620,6 +637,14 @@ it('resets all flags and options', function (): void {
         ->and($command)->toContain("'/src2' '/dest2'");
 });
 
+it('escapes single quotes in command paths', function (): void {
+    $command = new Rsync()
+        ->copy("/var/it's/src", "/var/it's/dest")
+        ->toCommand();
+
+    // Embedded single quotes must be escaped POSIX-style (' -> '\'') so the command stays valid.
+    expect($command)->toBe("rsync '/var/it'\\''s/src' '/var/it'\\''s/dest'");
+});
 // ─── dryRun() Tests ──────────────────────────────────────────────
 
 it('does not copy files in dry-run mode', function (): void {
@@ -1110,8 +1135,8 @@ it('getFlags returns the flags collection', function (): void {
     $flags = $rsync->getFlags();
 
     expect($flags->count())->toBe(2)
-        ->and($flags->contains('--delete'))->toBeTrue()
-        ->and($flags->contains('--recursive'))->toBeTrue();
+        ->and($flags->contains(FlagType::DELETE))->toBeTrue()
+        ->and($flags->contains(FlagType::RECURSIVE))->toBeTrue();
 });
 
 it('getOptions returns the options collection', function (): void {
@@ -1124,11 +1149,19 @@ it('getOptions returns the options collection', function (): void {
         ->and($options->has('exclude'))->toBeTrue();
 });
 
-it('getExcludes returns the excludes collection', function (): void {
+it('getExcludes returns the excludes patterns', function (): void {
     $rsync = new Rsync();
     $excludes = $rsync->getExcludes();
 
-    expect($excludes->count())->toBe(0);
+    expect($excludes)->toBe([])
+        ->and(count($excludes))->toBe(0);
+});
+
+it('getExcludes returns skip patterns', function (): void {
+    $rsync = new Rsync();
+    $rsync->skip('*.log');
+
+    expect($rsync->getExcludes())->toBe(['*.log']);
 });
 
 it('exclude called twice merges patterns', function (): void {
