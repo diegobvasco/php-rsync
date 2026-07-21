@@ -19,7 +19,7 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
 {
     public function add(mixed $item): static
     {
-        if ( ! $item instanceof FlagType) {
+        if (! $item instanceof FlagType) {
             throw new BadMethodCallException('FlagCollection only accepts FlagType cases.');
         }
 
@@ -46,7 +46,7 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
         foreach ($collection as $flag) {
             $found = array_any($items, fn (FlagType $existing): bool => $existing === $flag);
 
-            if ( ! $found) {
+            if (! $found) {
                 $items[] = $flag;
             }
         }

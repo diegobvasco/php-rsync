@@ -533,7 +533,7 @@ final class Rsync
         }
 
         // Dry-run must never mutate the filesystem, so skip directory cleanup entirely.
-        if ( ! $this->flags->contains(FlagType::DRY_RUN)) {
+        if (! $this->flags->contains(FlagType::DRY_RUN)) {
             $this->cleaner->cleanup($destination);
         }
 
@@ -642,11 +642,11 @@ final class Rsync
             throw new InvalidArgumentException('Source and destination must be set using copy() method.');
         }
 
-        if ( ! $this->fs->isDir($this->source)) {
+        if (! $this->fs->isDir($this->source)) {
             throw new InvalidArgumentException('Source directory does not exist: '.$this->source);
         }
 
-        if ( ! $this->fs->isReadable($this->source)) {
+        if (! $this->fs->isReadable($this->source)) {
             throw new InvalidArgumentException('Source directory is not readable: '.$this->source);
         }
     }

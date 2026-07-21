@@ -18,11 +18,11 @@ use Stringable;
  *
  * @extends AbstractCollection<Option>
  */
-final readonly class OptionCollection extends AbstractCollection implements Stringable, JsonSerializable
+final readonly class OptionCollection extends AbstractCollection implements JsonSerializable, Stringable
 {
     public function add(mixed $item): static
     {
-        if ( ! $item instanceof Option) {
+        if (! $item instanceof Option) {
             throw new BadMethodCallException('OptionCollection only accepts Option objects.');
         }
 

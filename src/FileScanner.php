@@ -42,7 +42,7 @@ final readonly class FileScanner
     {
         $absolutePath = $basePath.DIRECTORY_SEPARATOR.$relativePath;
 
-        if ( ! $this->filesystem->isFile($absolutePath)) {
+        if (! $this->filesystem->isFile($absolutePath)) {
             return null;
         }
 

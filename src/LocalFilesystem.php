@@ -53,7 +53,7 @@ final class LocalFilesystem implements Filesystem
     #[Override]
     public function deleteFile(string $path): bool
     {
-        if ( ! is_file($path)) {
+        if (! is_file($path)) {
             return false;
         }
 
@@ -90,7 +90,7 @@ final class LocalFilesystem implements Filesystem
     #[Override]
     public function isEmptyDirectory(string $path): bool
     {
-        if ( ! is_dir($path)) {
+        if (! is_dir($path)) {
             return false;
         }
 
@@ -103,7 +103,7 @@ final class LocalFilesystem implements Filesystem
     #[Override]
     public function scanFiles(string $path): iterable
     {
-        if ( ! is_dir($path)) {
+        if (! is_dir($path)) {
             return;
         }
 
@@ -122,7 +122,7 @@ final class LocalFilesystem implements Filesystem
     #[Override]
     public function scanEntriesDeepFirst(string $path): iterable
     {
-        if ( ! is_dir($path)) {
+        if (! is_dir($path)) {
             return;
         }
 

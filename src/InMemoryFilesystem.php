@@ -87,7 +87,7 @@ final class InMemoryFilesystem implements Filesystem
         $from = $this->normalize($from);
         $to = $this->normalize($to);
 
-        if ( ! isset($this->files[$from])) {
+        if (! isset($this->files[$from])) {
             return false;
         }
 
@@ -101,7 +101,7 @@ final class InMemoryFilesystem implements Filesystem
     {
         $path = $this->normalize($path);
 
-        if ( ! isset($this->files[$path])) {
+        if (! isset($this->files[$path])) {
             return false;
         }
 
@@ -115,7 +115,7 @@ final class InMemoryFilesystem implements Filesystem
     {
         $path = $this->normalize($path);
 
-        if ( ! $this->isDir($path)) {
+        if (! $this->isDir($path)) {
             return false;
         }
 
@@ -193,7 +193,7 @@ final class InMemoryFilesystem implements Filesystem
         $dirs = [];
 
         foreach (array_keys($this->files) as $file) {
-            if ( ! str_starts_with($file, $prefix)) {
+            if (! str_starts_with($file, $prefix)) {
                 continue;
             }
 

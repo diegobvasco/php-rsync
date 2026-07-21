@@ -19,7 +19,7 @@ final readonly class RealSyncOperation implements SyncOperationInterface
         $fs = $this->filesystem;
         $directory = dirname($to);
 
-        if ( ! $fs->isDir($directory)) {
+        if (! $fs->isDir($directory)) {
             $fs->mkdir($directory);
         }
 
@@ -31,7 +31,7 @@ final readonly class RealSyncOperation implements SyncOperationInterface
     {
         $fs = $this->filesystem;
 
-        if ( ! $fs->isFile($path)) {
+        if (! $fs->isFile($path)) {
             return false;
         }
 

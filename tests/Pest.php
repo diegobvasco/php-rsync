@@ -9,7 +9,7 @@ function base_tests_dir(string $dir): string
 
 function deleteTestDirectory(string $directory): void
 {
-    if ( ! is_dir($directory)) {
+    if (! is_dir($directory)) {
         return;
     }
 
