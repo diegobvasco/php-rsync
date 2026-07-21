@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\RealSyncOperation;
+use DiegoVasconcelos\Rsync\Engine\RealSyncOperation;
 
 beforeEach(function (): void {
     $this->sourceDir = base_tests_dir('/deploy_sync_real_test_source_'.uniqid());

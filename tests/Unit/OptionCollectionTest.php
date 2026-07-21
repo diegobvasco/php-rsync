@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\Option;
-use DiegoVasconcelos\Rsync\OptionCollection;
+use DiegoVasconcelos\Rsync\Command\Option;
+use DiegoVasconcelos\Rsync\Command\OptionCollection;
 
 it('creates empty collection', function (): void {
     $collection = new OptionCollection();

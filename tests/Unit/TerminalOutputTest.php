@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use DiegoVasconcelos\Rsync\FileInfo;
-use DiegoVasconcelos\Rsync\TerminalOutput;
+use DiegoVasconcelos\Rsync\Output\TerminalOutput;
 
 it('outputs copied file action', function (): void {
     $stream = fopen('php://memory', 'r+');

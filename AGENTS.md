@@ -53,13 +53,28 @@ occasionally unstable but the underlying metric is 100%.
 
 ## Architecture notes
 
+- **Namespace layout**: `src/` is split into five domain subnamespaces:
+  - `DiegoVasconcelos\Rsync` (root): public API surface — `Rsync`, `Result`,
+    `FileInfo`.
+  - `DiegoVasconcelos\Rsync\Command`: CLI flag/option model — `FlagType`,
+    `FlagCollection`, `Option`, `OptionCollection`.
+  - `DiegoVasconcelos\Rsync\Engine`: internal sync collaborators —
+    `FileScanner`, `GlobMatcher`, `DirectoryCleaner`, `Comparator`,
+    `SyncOperationInterface`, `RealSyncOperation`, `DryRunSyncOperation`.
+  - `DiegoVasconcelos\Rsync\Filesystem`: `Filesystem` interface with
+    `LocalFilesystem` and `InMemoryFilesystem` implementations.
+  - `DiegoVasconcelos\Rsync\Output`: `Output` interface + `TerminalOutput`.
+  - `DiegoVasconcelos\Rsync\Support`: shared primitives —
+    `AbstractCollection` (base of the immutable collections), `ByteFormatter`
+    (trait used by `FileInfo` and `Result`).
 - `Rsync` is the public entry point and **must keep its documented fluent API**
   (`copy`, `skip`, `delete`, `archive`, the flag/option methods, `run`,
   `toCommand`, `reset`, and the `Rsync(?Output $output = null, ?Filesystem $filesystem = null)`
   constructor).
-- Internal collaborators live as `final` classes: `FileScanner`, `GlobMatcher`
-  (memoized regex cache), `DirectoryCleaner`, `Comparator`, plus the
-  `Filesystem` interface with `LocalFilesystem` and `InMemoryFilesystem`.
+- Internal collaborators live as `final` classes under `Engine\`:
+  `FileScanner`, `GlobMatcher` (memoized regex cache), `DirectoryCleaner`,
+  `Comparator`, plus the `SyncOperationInterface` with `RealSyncOperation`
+  and `DryRunSyncOperation` implementations.
 - `FlagCollection` is **enum-only** — it stores `FlagType` cases, not strings.
 - Exclusion patterns are plain `list<string>` on `Rsync` (via `skip()`), not flags.
 - `FileInfo::checksum` is **lazy** (PHP 8.4 property hook + memoized closure);

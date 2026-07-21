@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync\Concerns;
+namespace DiegoVasconcelos\Rsync\Support;
 
 trait ByteFormatter
 {

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\FlagCollection;
-use DiegoVasconcelos\Rsync\FlagType;
+use DiegoVasconcelos\Rsync\Command\FlagCollection;
+use DiegoVasconcelos\Rsync\Command\FlagType;
 
 it('creates empty collection', function (): void {
     $collection = new FlagCollection();

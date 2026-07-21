@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use DiegoVasconcelos\Rsync\Engine\FileScanner;
+use DiegoVasconcelos\Rsync\Engine\GlobMatcher;
 use DiegoVasconcelos\Rsync\FileInfo;
-use DiegoVasconcelos\Rsync\FileScanner;
-use DiegoVasconcelos\Rsync\GlobMatcher;
-use DiegoVasconcelos\Rsync\InMemoryFilesystem;
-use DiegoVasconcelos\Rsync\LocalFilesystem;
+use DiegoVasconcelos\Rsync\Filesystem\InMemoryFilesystem;
+use DiegoVasconcelos\Rsync\Filesystem\LocalFilesystem;
 use Tests\Support\FilesystemDecorator;
 
 it('scan returns an empty map for a missing directory', function (): void {

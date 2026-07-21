@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync;
+namespace DiegoVasconcelos\Rsync\Command;
 
 use BadMethodCallException;
 use DiegoVasconcelos\Rsync\Support\AbstractCollection;

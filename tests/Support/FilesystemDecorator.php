@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use DiegoVasconcelos\Rsync\Filesystem;
+use DiegoVasconcelos\Rsync\Filesystem\Filesystem;
 use Override;
 
 /**

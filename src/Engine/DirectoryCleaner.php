@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync;
+namespace DiegoVasconcelos\Rsync\Engine;
+
+use DiegoVasconcelos\Rsync\Filesystem\Filesystem;
 
 /**
  * @internal Removes empty directories from a destination tree after a sync.

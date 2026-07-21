@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync;
+namespace DiegoVasconcelos\Rsync\Engine;
+
+use DiegoVasconcelos\Rsync\FileInfo;
+use DiegoVasconcelos\Rsync\Filesystem\Filesystem;
 
 /**
  * @internal Recursively scans directories into FileInfo maps and splits

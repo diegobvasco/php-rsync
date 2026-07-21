@@ -63,7 +63,7 @@ $result = (new Rsync())
 
 ```php
 use DiegoVasconcelos\Rsync\Rsync;
-use DiegoVasconcelos\Rsync\TerminalOutput;
+use DiegoVasconcelos\Rsync\Output\TerminalOutput;
 
 // Print each file action to the terminal as it happens
 $result = (new Rsync(new TerminalOutput()))
@@ -290,7 +290,7 @@ $output = new TerminalOutput(fopen('php://memory', 'r+'));
 Abstraction over all filesystem operations. The default `LocalFilesystem` wraps PHP's global FS functions; `InMemoryFilesystem` is a disk-less implementation that is handy for tests:
 
 ```php
-use DiegoVasconcelos\Rsync\InMemoryFilesystem;
+use DiegoVasconcelos\Rsync\Filesystem\InMemoryFilesystem;
 use DiegoVasconcelos\Rsync\Rsync;
 
 $fs = new InMemoryFilesystem();

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync;
+namespace DiegoVasconcelos\Rsync\Output;
 
+use DiegoVasconcelos\Rsync\FileInfo;
 use Override;
 
 final readonly class TerminalOutput implements Output

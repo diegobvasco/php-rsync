@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace DiegoVasconcelos\Rsync;
 
 use Closure;
-use DiegoVasconcelos\Rsync\Concerns\ByteFormatter;
+use DiegoVasconcelos\Rsync\Support\ByteFormatter;
 
 /**
  * File metadata captured during a scan.
