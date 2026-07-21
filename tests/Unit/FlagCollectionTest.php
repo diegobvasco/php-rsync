@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DiegoVasconcelos\Rsync\Flag;
 use DiegoVasconcelos\Rsync\FlagCollection;
+use DiegoVasconcelos\Rsync\FlagType;
 
 it('creates empty collection', function (): void {
     $collection = new FlagCollection();
@@ -35,6 +36,14 @@ it('deduplicates flags by name', function (): void {
     expect($collection->count())->toBe(1);
 });
 
+it('adds custom flag not in predefined list', function (): void {
+    $collection = new FlagCollection();
+    $collection = $collection->addFlag('--custom-unknown-flag');
+
+    expect($collection->count())->toBe(1)
+        ->and($collection->first()->name)->toBe('--custom-unknown-flag');
+});
+
 it('adds flag object', function (): void {
     $collection = new FlagCollection();
     $flag = new Flag('--recursive');
@@ -42,6 +51,30 @@ it('adds flag object', function (): void {
 
     expect($collection->count())->toBe(1)
         ->and($collection->first()->name)->toBe('--recursive');
+});
+
+it('adds flag from FlagType enum case', function (): void {
+    $collection = new FlagCollection();
+    $collection = $collection->addFlag(FlagType::DELETE);
+
+    expect($collection->count())->toBe(1)
+        ->and($collection->first()->name)->toBe('--delete')
+        ->and($collection->contains(FlagType::DELETE))->toBeTrue();
+});
+
+it('checks contains with FlagType enum', function (): void {
+    $collection = FlagCollection::fromArray(['--delete', '--recursive']);
+
+    expect($collection->contains(FlagType::DELETE))->toBeTrue()
+        ->and($collection->contains(FlagType::ARCHIVE))->toBeFalse();
+});
+
+it('removes flag by FlagType enum', function (): void {
+    $collection = FlagCollection::fromArray(['--delete', '--recursive']);
+    $newCollection = $collection->remove(FlagType::DELETE);
+
+    expect($newCollection->count())->toBe(1)
+        ->and($newCollection->first()->name)->toBe('--recursive');
 });
 
 it('throws exception for non-flag object', function (): void {

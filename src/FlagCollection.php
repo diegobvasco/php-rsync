@@ -22,7 +22,7 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
     public static function fromArray(array $names): static
     {
         return new self(array_map(
-            static fn (string $name): Flag => new Flag($name),
+            static fn (string $name): Flag => Flag::tryFromValue($name) ?? new Flag($name),
             $names,
         ));
     }
@@ -43,9 +43,13 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
         return new self([...$this->items, $item]);
     }
 
-    public function addFlag(string $name): static
+    public function addFlag(FlagType|string $name): static
     {
-        return $this->add(new Flag($name));
+        $flag = $name instanceof FlagType
+            ? Flag::fromType($name)
+            : Flag::tryFromValue($name) ?? new Flag($name);
+
+        return $this->add($flag);
     }
 
     public function merge(self $collection): static
@@ -63,12 +67,14 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
         return new self($items);
     }
 
-    public function remove(string $name): static
+    public function remove(FlagType|string $name): static
     {
+        $value = $name instanceof FlagType ? $name->value : $name;
+
         /** @var array<int, Flag> $filtered */
         $filtered = array_values(array_filter(
             $this->items,
-            static fn (Flag $flag): bool => $flag->name !== $name,
+            static fn (Flag $flag): bool => $flag->name !== $value,
         ));
 
         return new self($filtered);
@@ -100,9 +106,11 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
         return array_map($callback, $this->items, array_keys($this->items));
     }
 
-    public function contains(string $name): bool
+    public function contains(FlagType|string $name): bool
     {
-        return array_any($this->items, fn (Flag $item): bool => $item->name === $name);
+        $value = $name instanceof FlagType ? $name->value : $name;
+
+        return array_any($this->items, fn (Flag $item): bool => $item->name === $value);
     }
 
     /**

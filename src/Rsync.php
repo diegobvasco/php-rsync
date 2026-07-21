@@ -69,7 +69,7 @@ class Rsync
      */
     public function delete(): self
     {
-        $this->flags = $this->flags->addFlag('--delete');
+        $this->flags = $this->flags->addFlag(FlagType::DELETE);
 
         return $this;
     }
@@ -80,7 +80,7 @@ class Rsync
      */
     public function recursive(): self
     {
-        $this->flags = $this->flags->addFlag('--recursive');
+        $this->flags = $this->flags->addFlag(FlagType::RECURSIVE);
 
         return $this;
     }
@@ -91,7 +91,7 @@ class Rsync
      */
     public function archive(): self
     {
-        $this->flags = $this->flags->addFlag('--archive');
+        $this->flags = $this->flags->addFlag(FlagType::ARCHIVE);
 
         return $this;
     }
@@ -103,7 +103,7 @@ class Rsync
      */
     public function times(): self
     {
-        $this->flags = $this->flags->addFlag('--times');
+        $this->flags = $this->flags->addFlag(FlagType::TIMES);
 
         return $this;
     }
@@ -113,7 +113,7 @@ class Rsync
      */
     public function perms(): self
     {
-        $this->flags = $this->flags->addFlag('--perms');
+        $this->flags = $this->flags->addFlag(FlagType::PERMS);
 
         return $this;
     }
@@ -123,7 +123,7 @@ class Rsync
      */
     public function owner(): self
     {
-        $this->flags = $this->flags->addFlag('--owner');
+        $this->flags = $this->flags->addFlag(FlagType::OWNER);
 
         return $this;
     }
@@ -133,7 +133,7 @@ class Rsync
      */
     public function group(): self
     {
-        $this->flags = $this->flags->addFlag('--group');
+        $this->flags = $this->flags->addFlag(FlagType::GROUP);
 
         return $this;
     }
@@ -143,7 +143,7 @@ class Rsync
      */
     public function acls(): self
     {
-        $this->flags = $this->flags->addFlag('--acls');
+        $this->flags = $this->flags->addFlag(FlagType::ACLS);
 
         return $this;
     }
@@ -153,7 +153,7 @@ class Rsync
      */
     public function xattrs(): self
     {
-        $this->flags = $this->flags->addFlag('--xattrs');
+        $this->flags = $this->flags->addFlag(FlagType::XTRAS);
 
         return $this;
     }
@@ -163,7 +163,7 @@ class Rsync
      */
     public function devices(): self
     {
-        $this->flags = $this->flags->addFlag('--devices');
+        $this->flags = $this->flags->addFlag(FlagType::DEVICES);
 
         return $this;
     }
@@ -173,7 +173,7 @@ class Rsync
      */
     public function specials(): self
     {
-        $this->flags = $this->flags->addFlag('--specials');
+        $this->flags = $this->flags->addFlag(FlagType::SPECIALS);
 
         return $this;
     }
@@ -183,7 +183,7 @@ class Rsync
      */
     public function numericIds(): self
     {
-        $this->flags = $this->flags->addFlag('--numeric-ids');
+        $this->flags = $this->flags->addFlag(FlagType::NUMERIC_IDS);
 
         return $this;
     }
@@ -196,7 +196,7 @@ class Rsync
      */
     public function checksum(): self
     {
-        $this->flags = $this->flags->addFlag('--checksum');
+        $this->flags = $this->flags->addFlag(FlagType::CHECKSUM);
 
         return $this;
     }
@@ -206,7 +206,7 @@ class Rsync
      */
     public function ignoreTimes(): self
     {
-        $this->flags = $this->flags->addFlag('--ignore-times');
+        $this->flags = $this->flags->addFlag(FlagType::IGNORE_TIMES);
 
         return $this;
     }
@@ -216,7 +216,7 @@ class Rsync
      */
     public function sizeOnly(): self
     {
-        $this->flags = $this->flags->addFlag('--size-only');
+        $this->flags = $this->flags->addFlag(FlagType::SIZE_ONLY);
 
         return $this;
     }
@@ -226,7 +226,7 @@ class Rsync
      */
     public function update(): self
     {
-        $this->flags = $this->flags->addFlag('--update');
+        $this->flags = $this->flags->addFlag(FlagType::UPDATE);
 
         return $this;
     }
@@ -324,7 +324,7 @@ class Rsync
      */
     public function pruneEmptyDirs(): self
     {
-        $this->flags = $this->flags->addFlag('--prune-empty-dirs');
+        $this->flags = $this->flags->addFlag(FlagType::PRUNE_EMPTY_DIRS);
 
         return $this;
     }
@@ -336,7 +336,7 @@ class Rsync
      */
     public function backup(): self
     {
-        $this->flags = $this->flags->addFlag('--backup');
+        $this->flags = $this->flags->addFlag(FlagType::BACKUP);
 
         return $this;
     }
@@ -368,7 +368,7 @@ class Rsync
      */
     public function links(): self
     {
-        $this->flags = $this->flags->addFlag('--links');
+        $this->flags = $this->flags->addFlag(FlagType::LINKS);
 
         return $this;
     }
@@ -378,7 +378,7 @@ class Rsync
      */
     public function copyLinks(): self
     {
-        $this->flags = $this->flags->addFlag('--copy-links');
+        $this->flags = $this->flags->addFlag(FlagType::COPY_LINKS);
 
         return $this;
     }
@@ -388,7 +388,7 @@ class Rsync
      */
     public function copyUnsafeLinks(): self
     {
-        $this->flags = $this->flags->addFlag('--copy-unsafe-links');
+        $this->flags = $this->flags->addFlag(FlagType::COPY_UNSAFE_LINKS);
 
         return $this;
     }
@@ -398,7 +398,7 @@ class Rsync
      */
     public function safeLinks(): self
     {
-        $this->flags = $this->flags->addFlag('--safe-links');
+        $this->flags = $this->flags->addFlag(FlagType::SAFE_LINKS);
 
         return $this;
     }
@@ -408,7 +408,7 @@ class Rsync
      */
     public function hardLinks(): self
     {
-        $this->flags = $this->flags->addFlag('--hard-links');
+        $this->flags = $this->flags->addFlag(FlagType::HARD_LINKS);
 
         return $this;
     }
@@ -448,7 +448,7 @@ class Rsync
      */
     public function dryRun(): self
     {
-        $this->flags = $this->flags->addFlag('--dry-run');
+        $this->flags = $this->flags->addFlag(FlagType::DRY_RUN);
 
         return $this;
     }
@@ -458,7 +458,7 @@ class Rsync
      */
     public function force(): self
     {
-        $this->flags = $this->flags->addFlag('--force');
+        $this->flags = $this->flags->addFlag(FlagType::FORCE);
 
         return $this;
     }
@@ -468,7 +468,7 @@ class Rsync
      */
     public function removeSourceFiles(): self
     {
-        $this->flags = $this->flags->addFlag('--remove-source-files');
+        $this->flags = $this->flags->addFlag(FlagType::REMOVE_SOURCE_FILES);
 
         return $this;
     }
@@ -480,7 +480,7 @@ class Rsync
      */
     public function verbose(): self
     {
-        $this->flags = $this->flags->addFlag('--verbose');
+        $this->flags = $this->flags->addFlag(FlagType::VERBOSE);
 
         return $this;
     }
@@ -490,7 +490,7 @@ class Rsync
      */
     public function quiet(): self
     {
-        $this->flags = $this->flags->addFlag('--quiet');
+        $this->flags = $this->flags->addFlag(FlagType::QUIET);
 
         return $this;
     }
@@ -500,7 +500,7 @@ class Rsync
      */
     public function progress(): self
     {
-        $this->flags = $this->flags->addFlag('--progress');
+        $this->flags = $this->flags->addFlag(FlagType::PROGRESS);
 
         return $this;
     }
@@ -510,7 +510,7 @@ class Rsync
      */
     public function stats(): self
     {
-        $this->flags = $this->flags->addFlag('--stats');
+        $this->flags = $this->flags->addFlag(FlagType::STATS);
 
         return $this;
     }
@@ -520,7 +520,7 @@ class Rsync
      */
     public function itemizeChanges(): self
     {
-        $this->flags = $this->flags->addFlag('--itemize-changes');
+        $this->flags = $this->flags->addFlag(FlagType::ITEMIZE_CHANGES);
 
         return $this;
     }
@@ -530,7 +530,7 @@ class Rsync
      */
     public function humanReadable(): self
     {
-        $this->flags = $this->flags->addFlag('--human-readable');
+        $this->flags = $this->flags->addFlag(FlagType::HUMAN_READABLE);
 
         return $this;
     }
@@ -542,7 +542,7 @@ class Rsync
      */
     public function deleteBefore(): self
     {
-        $this->flags = $this->flags->addFlag('--delete-before');
+        $this->flags = $this->flags->addFlag(FlagType::DELETE_BEFORE);
 
         return $this;
     }
@@ -552,7 +552,7 @@ class Rsync
      */
     public function deleteAfter(): self
     {
-        $this->flags = $this->flags->addFlag('--delete-after');
+        $this->flags = $this->flags->addFlag(FlagType::DELETE_AFTER);
 
         return $this;
     }
@@ -562,7 +562,7 @@ class Rsync
      */
     public function deleteExcluded(): self
     {
-        $this->flags = $this->flags->addFlag('--delete-excluded');
+        $this->flags = $this->flags->addFlag(FlagType::DELETE_EXCLUDED);
 
         return $this;
     }
@@ -645,14 +645,14 @@ class Rsync
         $source = $this->source ?? '';
         $destination = $this->destination ?? '';
 
-        $operation = $this->flags->contains('--dry-run')
+        $operation = $this->flags->contains(FlagType::DRY_RUN)
             ? new DryRunSyncOperation()
             : new RealSyncOperation($this->output);
 
         ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles, 'destinationFiles' => $destinationFiles] =
             $this->scanFiles($source, $destination);
 
-        $useChecksum = $this->flags->contains('--checksum');
+        $useChecksum = $this->flags->contains(FlagType::CHECKSUM);
 
         $copied = [];
         $skipped = [];
@@ -742,19 +742,19 @@ class Rsync
      */
     private function shouldDelete(): bool
     {
-        if ($this->flags->contains('--delete')) {
+        if ($this->flags->contains(FlagType::DELETE)) {
             return true;
         }
 
-        if ($this->flags->contains('--delete-before')) {
+        if ($this->flags->contains(FlagType::DELETE_BEFORE)) {
             return true;
         }
 
-        if ($this->flags->contains('--delete-after')) {
+        if ($this->flags->contains(FlagType::DELETE_AFTER)) {
             return true;
         }
 
-        return $this->flags->contains('--delete-excluded');
+        return $this->flags->contains(FlagType::DELETE_EXCLUDED);
     }
 
     /**
