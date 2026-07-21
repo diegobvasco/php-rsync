@@ -62,6 +62,7 @@ abstract readonly class AbstractCollection implements ArrayAccess, Countable, It
         return array_last($this->items);
     }
 
+    #[\Override]
     public function count(): int
     {
         return count($this->items);
@@ -70,26 +71,31 @@ abstract readonly class AbstractCollection implements ArrayAccess, Countable, It
     /**
      * @return ArrayIterator<int, T>
      */
+    #[\Override]
     public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->items);
     }
 
+    #[\Override]
     public function offsetExists(mixed $offset): bool
     {
         return isset($this->items[$offset]);
     }
 
+    #[\Override]
     public function offsetGet(mixed $offset): mixed
     {
         return $this->items[$offset] ?? throw new \OutOfBoundsException(sprintf('Offset %d does not exist.', $offset));
     }
 
+    #[\Override]
     public function offsetSet(mixed $offset, mixed $value): void
     {
         throw new BadMethodCallException(static::class.' is immutable.');
     }
 
+    #[\Override]
     public function offsetUnset(mixed $offset): void
     {
         throw new BadMethodCallException(static::class.' is immutable.');

@@ -99,13 +99,8 @@ final readonly class OptionCollection extends AbstractCollection implements \Str
      */
     public function get(string $key): Option
     {
-        foreach ($this->items as $option) {
-            if ($option->key === $key) {
-                return $option;
-            }
-        }
-
-        throw new \OutOfBoundsException(sprintf("Option '%s' not found.", $key));
+        return array_find($this->items, fn (Option $option): bool => $option->key === $key)
+            ?? throw new \OutOfBoundsException(sprintf("Option '%s' not found.", $key));
     }
 
     public function has(string $key): bool
@@ -144,6 +139,7 @@ final readonly class OptionCollection extends AbstractCollection implements \Str
         return $result;
     }
 
+    #[\Override]
     public function __toString(): string
     {
         return implode(' ', array_map(
@@ -155,6 +151,7 @@ final readonly class OptionCollection extends AbstractCollection implements \Str
     /**
      * @return array<string, string|array<int, string>>
      */
+    #[\Override]
     public function jsonSerialize(): array
     {
         return $this->toArray();

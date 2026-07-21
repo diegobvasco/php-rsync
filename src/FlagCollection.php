@@ -118,6 +118,7 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
         return $this->names();
     }
 
+    #[\Override]
     public function __toString(): string
     {
         return implode(' ', $this->names());
@@ -126,6 +127,7 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
     /**
      * @return list<string>
      */
+    #[\Override]
     public function jsonSerialize(): array
     {
         return $this->names();

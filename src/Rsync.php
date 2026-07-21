@@ -6,7 +6,7 @@ namespace DiegoVasconcelos\Rsync;
 
 use InvalidArgumentException;
 
-class Rsync
+final class Rsync
 {
     private ?string $source = null;
 

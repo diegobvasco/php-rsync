@@ -17,16 +17,19 @@ final readonly class TerminalOutput implements Output
         $this->stream = $stream ?? STDOUT;
     }
 
+    #[\Override]
     public function copied(FileInfo $file): void
     {
         fwrite($this->stream, sprintf("COPY %s (%s)\n", $file->relativePath, $file->formattedSize()));
     }
 
+    #[\Override]
     public function deleted(FileInfo $file): void
     {
         fwrite($this->stream, sprintf("DELETE %s\n", $file->relativePath));
     }
 
+    #[\Override]
     public function skipped(FileInfo $file): void
     {
         fwrite($this->stream, sprintf("SKIP %s\n", $file->relativePath));

@@ -28,6 +28,7 @@ final readonly class Option implements \Stringable
     /**
      * Get the option as a command string (e.g., --exclude='pattern').
      */
+    #[\Override]
     public function __toString(): string
     {
         return $this->toCommandString();
