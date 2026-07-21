@@ -24,22 +24,22 @@ it('syncs when mtime differs (no checksum)', function (): void {
 });
 
 it('does not sync when size and mtime match', function (): void {
-    $source = new FileInfo('f.txt', '/s/f.txt', 10, 1000, 'hash_a');
-    $dest = new FileInfo('f.txt', '/d/f.txt', 10, 1000, 'hash_b');
+    $source = new FileInfo('f.txt', '/s/f.txt', 10, 1000, fn (): string => 'hash_a');
+    $dest = new FileInfo('f.txt', '/d/f.txt', 10, 1000, fn (): string => 'hash_b');
 
     expect($this->comparator->shouldSync($source, $dest))->toBeFalse();
 });
 
 it('syncs when checksum differs (checksum mode)', function (): void {
-    $source = new FileInfo('f.txt', '/s/f.txt', 10, 1000, 'hash_a');
-    $dest = new FileInfo('f.txt', '/d/f.txt', 10, 1000, 'hash_b');
+    $source = new FileInfo('f.txt', '/s/f.txt', 10, 1000, fn (): string => 'hash_a');
+    $dest = new FileInfo('f.txt', '/d/f.txt', 10, 1000, fn (): string => 'hash_b');
 
     expect($this->comparator->shouldSync($source, $dest, useChecksum: true))->toBeTrue();
 });
 
 it('does not sync when checksum matches (checksum mode)', function (): void {
-    $source = new FileInfo('f.txt', '/s/f.txt', 10, 1000, 'same');
-    $dest = new FileInfo('f.txt', '/d/f.txt', 10, 9999, 'same');
+    $source = new FileInfo('f.txt', '/s/f.txt', 10, 1000, fn (): string => 'same');
+    $dest = new FileInfo('f.txt', '/d/f.txt', 10, 9999, fn (): string => 'same');
 
     expect($this->comparator->shouldSync($source, $dest, useChecksum: true))->toBeFalse();
 });

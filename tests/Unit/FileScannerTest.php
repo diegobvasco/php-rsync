@@ -7,6 +7,7 @@ use DiegoVasconcelos\Rsync\FileScanner;
 use DiegoVasconcelos\Rsync\GlobMatcher;
 use DiegoVasconcelos\Rsync\InMemoryFilesystem;
 use DiegoVasconcelos\Rsync\LocalFilesystem;
+use Tests\Support\FilesystemDecorator;
 
 it('scan returns an empty map for a missing directory', function (): void {
     $scanner = new FileScanner(new LocalFilesystem(), new GlobMatcher());
@@ -67,4 +68,42 @@ it('partition returns everything as included when no patterns given', function (
 
     expect(array_keys($included))->toBe(['a.txt'])
         ->and($excluded)->toBe([]);
+});
+
+it('does not hash file contents during scan (lazy checksum)', function (): void {
+    $inner = new InMemoryFilesystem();
+    $inner->put('/src/a.txt', 'hello');
+    $inner->put('/src/b.txt', 'world');
+
+    $fs = new class($inner) extends FilesystemDecorator
+    {
+        public int $hashCalls = 0;
+
+        public function hash(string $path): string
+        {
+            $this->hashCalls++;
+
+            return parent::hash($path);
+        }
+    };
+
+    $scanner = new FileScanner($fs, new GlobMatcher());
+    $files = $scanner->scan('/src');
+
+    expect($fs->hashCalls)->toBe(0); // Hashing deferred until checksum is read.
+
+    // Reading the checksum triggers exactly one hash per file.
+    expect($files['a.txt']->checksum)->not->toBeEmpty()
+        ->and($files['b.txt']->checksum)->not->toBeEmpty()
+        ->and($fs->hashCalls)->toBe(2);
+});
+
+it('fileAt returns null for missing paths and a FileInfo for existing ones', function (): void {
+    $fs = new InMemoryFilesystem();
+    $fs->put('/dest/a.txt', 'x');
+
+    $scanner = new FileScanner($fs, new GlobMatcher());
+
+    expect($scanner->fileAt('/dest', 'a.txt'))->toBeInstanceOf(FileInfo::class)
+        ->and($scanner->fileAt('/dest', 'missing.txt'))->toBeNull();
 });

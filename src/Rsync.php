@@ -580,15 +580,14 @@ class Rsync
     {
         $this->validateConfiguration();
 
-        $source = $this->source ?? '';
         $destination = $this->destination ?? '';
 
         $operation = $this->flags->contains(FlagType::DRY_RUN)
             ? new DryRunSyncOperation()
             : new RealSyncOperation($this->output, $this->fs);
 
-        ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles, 'destinationFiles' => $destinationFiles] =
-            $this->scanFiles($source, $destination);
+        ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles] = $this->scanSource();
+        $destinationFiles = $this->shouldDelete() ? $this->scanner->scan($destination) : [];
 
         $useChecksum = $this->flags->contains(FlagType::CHECKSUM);
 
@@ -597,7 +596,8 @@ class Rsync
         $deleted = [];
 
         foreach ($sourceFiles as $relativePath => $sourceFile) {
-            $destinationFile = $destinationFiles[$relativePath] ?? null;
+            $destinationFile = $destinationFiles[$relativePath]
+                ?? $this->scanner->fileAt($destination, $relativePath);
 
             if ($destinationFile !== null && ! $this->comparator->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
                 $skipped[] = $sourceFile;
@@ -631,12 +631,13 @@ class Rsync
     }
 
     /**
-     * Scan source and destination files, applying exclusions to source.
+     * Scan source files, splitting them into included/excluded sets.
      *
-     * @return array{sourceFiles: array<string, FileInfo>, excludedFiles: array<string, FileInfo>, destinationFiles: array<string, FileInfo>}
+     * @return array{sourceFiles: array<string, FileInfo>, excludedFiles: array<string, FileInfo>}
      */
-    private function scanFiles(string $source, string $destination): array
+    private function scanSource(): array
     {
+        $source = $this->source ?? '';
         $excludes = $this->getEffectiveExcludes();
 
         ['included' => $sourceFiles, 'excluded' => $excludedFiles] = $this->scanner->partition(
@@ -647,7 +648,6 @@ class Rsync
         return [
             'sourceFiles' => $sourceFiles,
             'excludedFiles' => $excludedFiles,
-            'destinationFiles' => $this->scanner->scan($destination),
         ];
     }
 
