@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.0](https://github.com/diegobvasco/php-rsync/compare/v1.4.0...v2.0.0) (2026-07-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* all class FQCNs except Rsync, Result, and FileInfo have moved namespaces. Update `use` statements accordingly:
+
+### Bug Fixes
+
+* reorganize src/ into domain subnamespaces ([#12](https://github.com/diegobvasco/php-rsync/issues/12)) ([7fc5a05](https://github.com/diegobvasco/php-rsync/commit/7fc5a059b068eccca1393adccc6b34bc7363469c))
+
 ## [1.4.0](https://github.com/diegobvasco/php-rsync/compare/v1.3.0...v1.4.0) (2026-07-21)
 
 
