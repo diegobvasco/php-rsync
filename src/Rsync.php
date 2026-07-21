@@ -153,7 +153,7 @@ class Rsync
      */
     public function xattrs(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::XTRAS);
+        $this->flags = $this->flags->addFlag(FlagType::XATTRS);
 
         return $this;
     }
@@ -585,14 +585,22 @@ class Rsync
         }
 
         if ($this->source !== null) {
-            $parts[] = sprintf("'%s'", $this->source);
+            $parts[] = $this->escapeShellPath($this->source);
         }
 
         if ($this->destination !== null) {
-            $parts[] = sprintf("'%s'", $this->destination);
+            $parts[] = $this->escapeShellPath($this->destination);
         }
 
         return implode(' ', $parts);
+    }
+
+    /**
+     * Escape a path for use in a single-quoted shell argument (POSIX style).
+     */
+    private function escapeShellPath(string $path): string
+    {
+        return "'".str_replace("'", "'\\''", $path)."'";
     }
 
     /**
@@ -680,7 +688,10 @@ class Rsync
             $deleted = $this->deleteFiles($sourceFiles, $destinationFiles, $operation);
         }
 
-        $this->cleanupEmptyDirectories();
+        // Dry-run must never mutate the filesystem, so skip directory cleanup entirely.
+        if (! $this->flags->contains(FlagType::DRY_RUN)) {
+            $this->cleanupEmptyDirectories();
+        }
 
         return new Result(
             copied: $copied,

@@ -43,14 +43,22 @@ final readonly class Option implements \Stringable
         }
 
         if (count($this->values) === 1) {
-            return '--'.$this->key.'='.sprintf("'%s'", $this->values[0]);
+            return '--'.$this->key.'='.$this->escapeValue($this->values[0]);
         }
 
         $key = $this->key;
 
         return implode(' ', array_map(
-            static fn (string $value): string => '--'.$key.'='.sprintf("'%s'", $value),
+            fn (string $value): string => '--'.$key.'='.$this->escapeValue($value),
             $this->values,
         ));
+    }
+
+    /**
+     * Escape a value for use in a single-quoted shell argument (POSIX style).
+     */
+    private function escapeValue(string $value): string
+    {
+        return "'".str_replace("'", "'\\''", $value)."'";
     }
 }

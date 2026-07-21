@@ -25,7 +25,7 @@ enum FlagType: string
 
     case ACLS = '--acls';
 
-    case XTRAS = '--xattrs';
+    case XATTRS = '--xattrs';
 
     case DEVICES = '--devices';
 

@@ -168,7 +168,7 @@ it('generates human readable summary', function (): void {
 
     $summary = $result->summary();
 
-    expect($summary)->toContain('Copied: 1 files')
+    expect($summary)->toContain('Copied: 1 file')
         ->and($summary)->toContain('Deleted: 0 files')
         ->and($summary)->toContain('Skipped: 0 files');
 });
@@ -216,6 +216,18 @@ it('removes empty directories after sync', function (): void {
         ->run();
 
     expect(is_dir($this->destDir.'/old_empty_dir'))->toBeFalse();
+});
+
+it('does not remove empty directories in dry-run mode', function (): void {
+    mkdir($this->destDir.'/already_empty_dir', recursive: true);
+
+    new Rsync()
+        ->copy($this->sourceDir, $this->destDir)
+        ->dryRun()
+        ->run();
+
+    // Dry-run must not mutate the filesystem: a pre-existing empty directory must remain.
+    expect(is_dir($this->destDir.'/already_empty_dir'))->toBeTrue();
 });
 
 it('skips files matching ? wildcard pattern', function (): void {
@@ -620,6 +632,14 @@ it('resets all flags and options', function (): void {
         ->and($command)->toContain("'/src2' '/dest2'");
 });
 
+it('escapes single quotes in command paths', function (): void {
+    $command = new Rsync()
+        ->copy("/var/it's/src", "/var/it's/dest")
+        ->toCommand();
+
+    // Embedded single quotes must be escaped POSIX-style (' -> '\'') so the command stays valid.
+    expect($command)->toBe("rsync '/var/it'\\''s/src' '/var/it'\\''s/dest'");
+});
 // ─── dryRun() Tests ──────────────────────────────────────────────
 
 it('does not copy files in dry-run mode', function (): void {

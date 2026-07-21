@@ -7,9 +7,7 @@ namespace DiegoVasconcelos\Rsync;
 use DiegoVasconcelos\Rsync\Concerns\ByteFormatter;
 
 /**
- * @param  array<int, FileInfo>  $copied
- * @param  array<int, FileInfo>  $deleted
- * @param  array<int, FileInfo>  $skipped
+ * Immutable result of a sync operation.
  */
 final readonly class Result
 {
@@ -81,11 +79,19 @@ final readonly class Result
     {
         $parts = [];
 
-        $parts[] = 'Copied: '.$this->copiedCount().' files ('.self::formatBytes($this->totalBytesCopied()).')';
-        $parts[] = 'Deleted: '.$this->deletedCount().' files ('.self::formatBytes($this->totalBytesDeleted()).')';
-        $parts[] = 'Skipped: '.$this->skippedCount().' files';
+        $parts[] = sprintf('Copied: %d %s (%s)', $this->copiedCount(), $this->pluralizeFile($this->copiedCount()), self::formatBytes($this->totalBytesCopied()));
+        $parts[] = sprintf('Deleted: %d %s (%s)', $this->deletedCount(), $this->pluralizeFile($this->deletedCount()), self::formatBytes($this->totalBytesDeleted()));
+        $parts[] = sprintf('Skipped: %d %s', $this->skippedCount(), $this->pluralizeFile($this->skippedCount()));
 
         return implode("\n", $parts);
+    }
+
+    /**
+     * Return "file" or "files" based on the count.
+     */
+    private function pluralizeFile(int $count): string
+    {
+        return $count === 1 ? 'file' : 'files';
     }
 
     /**

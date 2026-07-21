@@ -13,6 +13,10 @@ trait DirectoryCleanup
     {
         $destination = $this->destination ?? '';
 
+        if ($destination === '' || ! is_dir($destination)) {
+            return;
+        }
+
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($destination, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST,
@@ -31,6 +35,13 @@ trait DirectoryCleanup
      */
     protected function isEmptyDirectory(string $path): bool
     {
-        return is_dir($path) && count(scandir($path)) === 2; // Only . and ..
+        if (! is_dir($path)) {
+            return false;
+        }
+
+        /** @var list<string>|false $entries */
+        $entries = scandir($path);
+
+        return $entries !== false && count($entries) === 2; // Only . and ..
     }
 }
