@@ -2,36 +2,54 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync\Concerns;
+namespace DiegoVasconcelos\Rsync;
 
-trait GlobMatcher
+/**
+ * @internal Matches paths against glob-style exclusion patterns.
+ *
+ * Supports: `*` / `**` (any characters including `/`), `?` (single char),
+ * `[class]` / `[^class]` (character classes), and trailing `/` (directory).
+ */
+final class GlobMatcher
 {
+    /** @var array<string, string> Cached compiled regexes, keyed by pattern. */
+    private static array $regexCache = [];
+
+    /**
+     * Clear the compiled-pattern cache (primarily useful for tests).
+     */
+    public static function clearCache(): void
+    {
+        self::$regexCache = [];
+    }
+
     /**
      * Check if a path matches any of the exclusion patterns.
      *
-     * @param  array<string>  $patterns
+     * @param  list<string>  $patterns
      */
-    protected function matchesExclusion(string $path, array $patterns): bool
+    public function matches(string $path, array $patterns): bool
     {
         $normalizedPath = str_replace('\\', '/', $path);
 
         foreach ($patterns as $pattern) {
             $normalizedPattern = str_replace('\\', '/', $pattern);
 
-            // Exact match
+            // Exact match.
             if ($normalizedPath === $normalizedPattern) {
                 return true;
             }
 
-            // Directory pattern match (pattern ends with /)
+            // Directory pattern match (pattern ends with /).
             if (str_ends_with($normalizedPattern, '/')) {
                 $dirPattern = rtrim($normalizedPattern, '/');
+
                 if (str_starts_with($normalizedPath, $dirPattern.'/') || $normalizedPath === $dirPattern) {
                     return true;
                 }
             }
 
-            // Glob pattern match
+            // Glob pattern match.
             if ($this->globMatch($normalizedPattern, $normalizedPath)) {
                 return true;
             }
@@ -42,20 +60,21 @@ trait GlobMatcher
 
     /**
      * Match a string against a glob pattern using regex.
-     *
-     * Supports: * (recursive), ** (recursive), ? (single char), [class] (character class)
      */
-    protected function globMatch(string $pattern, string $string): bool
+    public function globMatch(string $pattern, string $subject): bool
     {
-        $regex = $this->globToRegex($pattern);
-
-        return (bool) preg_match($regex, $string);
+        return preg_match($this->globToRegex($pattern), $subject) === 1;
     }
 
     /**
-     * Convert a glob pattern to a regex pattern.
+     * Convert a glob pattern to a regex pattern (memoized).
      */
-    protected function globToRegex(string $pattern): string
+    public function globToRegex(string $pattern): string
+    {
+        return self::$regexCache[$pattern] ??= $this->compile($pattern);
+    }
+
+    private function compile(string $pattern): string
     {
         $regex = '';
         $length = strlen($pattern);
@@ -65,41 +84,38 @@ trait GlobMatcher
             $char = $pattern[$i];
 
             if ($char === '*' && isset($pattern[$i + 1]) && $pattern[$i + 1] === '*') {
-                // ** matches anything including /
+                // ** matches anything including /.
                 $regex .= '.*';
                 $i += 2;
 
-                // Handle trailing **/ (matches any directory prefix)
+                // Handle trailing **/ (matches any directory prefix).
                 if ($i < $length && $pattern[$i] === '/') {
                     $regex .= '(?:\/|$)';
                     $i++;
                 }
             } elseif ($char === '*') {
-                // * matches anything including / for recursive directory matching
+                // * matches anything including / for recursive directory matching.
                 $regex .= '.*';
                 $i++;
             } elseif ($char === '?') {
-                // ? matches a single char
                 $regex .= '.';
                 $i++;
             } elseif ($char === '/') {
-                // Escape / for use with / delimiter
                 $regex .= '\\/';
                 $i++;
             } elseif ($char === '.') {
                 $regex .= '\\.';
                 $i++;
             } elseif ($char === '[') {
-                // Character class - copy until ]
                 $regex .= '[';
                 $i++;
+
                 if ($i < $length && $pattern[$i] === '^') {
                     $regex .= '^';
                     $i++;
                 }
 
                 while ($i < $length && $pattern[$i] !== ']') {
-                    // Escape / inside character classes for use with / delimiter
                     if ($pattern[$i] === '/') {
                         $regex .= '\\/';
                     } else {

@@ -2,27 +2,31 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync\Concerns;
+namespace DiegoVasconcelos\Rsync;
 
-use DiegoVasconcelos\Rsync\FileInfo;
-use DiegoVasconcelos\Rsync\Filesystem;
-
-trait FileScanner
+/**
+ * @internal Recursively scans directories into FileInfo maps and splits
+ * them into included/excluded sets based on glob patterns.
+ */
+final readonly class FileScanner
 {
-    abstract protected function filesystem(): Filesystem;
+    public function __construct(
+        private Filesystem $filesystem,
+        private GlobMatcher $matcher,
+    ) {}
 
     /**
      * Recursively scan a directory and return all FileInfo objects (unfiltered).
      *
      * @return array<string, FileInfo>
      */
-    protected function scanAllFiles(string $path): array
+    public function scan(string $path): array
     {
         $files = [];
-        $fs = $this->filesystem();
+        $fs = $this->filesystem;
 
         foreach ($fs->scanFiles($path) as $absolutePath) {
-            $relativePath = ltrim(substr((string) $absolutePath, strlen($path)), DIRECTORY_SEPARATOR);
+            $relativePath = ltrim(substr($absolutePath, strlen($path)), DIRECTORY_SEPARATOR);
 
             $files[$relativePath] = new FileInfo(
                 relativePath: $relativePath,
@@ -37,19 +41,19 @@ trait FileScanner
     }
 
     /**
-     * Filter files, separating included from excluded based on patterns.
+     * Split files into included/excluded based on exclusion patterns.
      *
      * @param  array<string, FileInfo>  $files
-     * @param  array<string>  $excludes
+     * @param  list<string>  $excludes
      * @return array{included: array<string, FileInfo>, excluded: array<string, FileInfo>}
      */
-    protected function filterByExclusions(array $files, array $excludes): array
+    public function partition(array $files, array $excludes): array
     {
         $included = [];
         $excluded = [];
 
         foreach ($files as $relativePath => $file) {
-            if ($this->matchesExclusion($relativePath, $excludes)) {
+            if ($excludes !== [] && $this->matcher->matches($relativePath, $excludes)) {
                 $excluded[$relativePath] = $file;
             } else {
                 $included[$relativePath] = $file;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-use DiegoVasconcelos\Rsync\Concerns\AbstractCollection;
+use DiegoVasconcelos\Rsync\Support\AbstractCollection;
 use JsonSerializable;
 
 /**

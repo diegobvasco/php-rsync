@@ -4,19 +4,10 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-use DiegoVasconcelos\Rsync\Concerns\DirectoryCleanup;
-use DiegoVasconcelos\Rsync\Concerns\FileOperations;
-use DiegoVasconcelos\Rsync\Concerns\FileScanner;
-use DiegoVasconcelos\Rsync\Concerns\GlobMatcher;
 use InvalidArgumentException;
 
 class Rsync
 {
-    use DirectoryCleanup;
-    use FileOperations;
-    use FileScanner;
-    use GlobMatcher;
-
     private ?string $source = null;
 
     private ?string $destination = null;
@@ -30,19 +21,23 @@ class Rsync
 
     private readonly Filesystem $fs;
 
-    public function __construct(private ?Output $output = null, ?Filesystem $filesystem = null)
+    private readonly GlobMatcher $matcher;
+
+    private readonly FileScanner $scanner;
+
+    private readonly DirectoryCleaner $cleaner;
+
+    private readonly Comparator $comparator;
+
+    public function __construct(private readonly ?Output $output = null, ?Filesystem $filesystem = null)
     {
         $this->flags = new FlagCollection();
         $this->options = new OptionCollection();
         $this->fs = $filesystem ?? new LocalFilesystem();
-    }
-
-    /**
-     * Provide the filesystem to the composed traits.
-     */
-    protected function filesystem(): Filesystem
-    {
-        return $this->fs;
+        $this->matcher = new GlobMatcher();
+        $this->scanner = new FileScanner($this->fs, $this->matcher);
+        $this->cleaner = new DirectoryCleaner($this->fs);
+        $this->comparator = new Comparator();
     }
 
     /**
@@ -63,11 +58,39 @@ class Rsync
      */
     public function skip(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        foreach ($patterns as $pattern) {
+        foreach ((array) $patterns as $pattern) {
             $this->excludes = [...$this->excludes, $pattern];
         }
+
+        return $this;
+    }
+
+    /**
+     * Enable a flag and return $this for chaining.
+     */
+    private function setFlag(FlagType $flag): self
+    {
+        $this->flags = $this->flags->addFlag($flag);
+
+        return $this;
+    }
+
+    /**
+     * Append values to a (possibly existing) option and return $this.
+     *
+     * @param  string|array<string>  $values
+     */
+    private function addOptionValues(string $key, string|array $values): self
+    {
+        $option = $this->options->has($key)
+            ? $this->options->get($key)
+            : new Option($key);
+
+        foreach ((array) $values as $value) {
+            $option = $option->addValue($value);
+        }
+
+        $this->options = $this->options->remove($key)->add($option);
 
         return $this;
     }
@@ -80,9 +103,7 @@ class Rsync
      */
     public function delete(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE);
     }
 
     /**
@@ -91,9 +112,7 @@ class Rsync
      */
     public function recursive(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::RECURSIVE);
-
-        return $this;
+        return $this->setFlag(FlagType::RECURSIVE);
     }
 
     /**
@@ -102,9 +121,7 @@ class Rsync
      */
     public function archive(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::ARCHIVE);
-
-        return $this;
+        return $this->setFlag(FlagType::ARCHIVE);
     }
 
     // ─── Metadata Preservation ────────────────────────────────────
@@ -114,9 +131,7 @@ class Rsync
      */
     public function times(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::TIMES);
-
-        return $this;
+        return $this->setFlag(FlagType::TIMES);
     }
 
     /**
@@ -124,9 +139,7 @@ class Rsync
      */
     public function perms(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::PERMS);
-
-        return $this;
+        return $this->setFlag(FlagType::PERMS);
     }
 
     /**
@@ -134,9 +147,7 @@ class Rsync
      */
     public function owner(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::OWNER);
-
-        return $this;
+        return $this->setFlag(FlagType::OWNER);
     }
 
     /**
@@ -144,9 +155,7 @@ class Rsync
      */
     public function group(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::GROUP);
-
-        return $this;
+        return $this->setFlag(FlagType::GROUP);
     }
 
     /**
@@ -154,9 +163,7 @@ class Rsync
      */
     public function acls(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::ACLS);
-
-        return $this;
+        return $this->setFlag(FlagType::ACLS);
     }
 
     /**
@@ -164,9 +171,7 @@ class Rsync
      */
     public function xattrs(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::XATTRS);
-
-        return $this;
+        return $this->setFlag(FlagType::XATTRS);
     }
 
     /**
@@ -174,9 +179,7 @@ class Rsync
      */
     public function devices(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DEVICES);
-
-        return $this;
+        return $this->setFlag(FlagType::DEVICES);
     }
 
     /**
@@ -184,9 +187,7 @@ class Rsync
      */
     public function specials(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::SPECIALS);
-
-        return $this;
+        return $this->setFlag(FlagType::SPECIALS);
     }
 
     /**
@@ -194,9 +195,7 @@ class Rsync
      */
     public function numericIds(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::NUMERIC_IDS);
-
-        return $this;
+        return $this->setFlag(FlagType::NUMERIC_IDS);
     }
 
     // ─── Comparison ───────────────────────────────────────────────
@@ -207,9 +206,7 @@ class Rsync
      */
     public function checksum(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::CHECKSUM);
-
-        return $this;
+        return $this->setFlag(FlagType::CHECKSUM);
     }
 
     /**
@@ -217,9 +214,7 @@ class Rsync
      */
     public function ignoreTimes(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::IGNORE_TIMES);
-
-        return $this;
+        return $this->setFlag(FlagType::IGNORE_TIMES);
     }
 
     /**
@@ -227,9 +222,7 @@ class Rsync
      */
     public function sizeOnly(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::SIZE_ONLY);
-
-        return $this;
+        return $this->setFlag(FlagType::SIZE_ONLY);
     }
 
     /**
@@ -237,9 +230,7 @@ class Rsync
      */
     public function update(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::UPDATE);
-
-        return $this;
+        return $this->setFlag(FlagType::UPDATE);
     }
 
     // ─── Excludes / Includes ──────────────────────────────────────
@@ -251,19 +242,7 @@ class Rsync
      */
     public function exclude(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        $option = $this->options->has('exclude')
-            ? $this->options->get('exclude')
-            : new Option('exclude');
-
-        foreach ($patterns as $pattern) {
-            $option = $option->addValue($pattern);
-        }
-
-        $this->options = $this->options->remove('exclude')->add($option);
-
-        return $this;
+        return $this->addOptionValues('exclude', $patterns);
     }
 
     /**
@@ -283,19 +262,7 @@ class Rsync
      */
     public function excludeDir(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        $option = $this->options->has('exclude-dir')
-            ? $this->options->get('exclude-dir')
-            : new Option('exclude-dir');
-
-        foreach ($patterns as $pattern) {
-            $option = $option->addValue($pattern);
-        }
-
-        $this->options = $this->options->remove('exclude-dir')->add($option);
-
-        return $this;
+        return $this->addOptionValues('exclude-dir', $patterns);
     }
 
     /**
@@ -305,19 +272,7 @@ class Rsync
      */
     public function include(string|array $patterns): self
     {
-        $patterns = (array) $patterns;
-
-        $option = $this->options->has('include')
-            ? $this->options->get('include')
-            : new Option('include');
-
-        foreach ($patterns as $pattern) {
-            $option = $option->addValue($pattern);
-        }
-
-        $this->options = $this->options->remove('include')->add($option);
-
-        return $this;
+        return $this->addOptionValues('include', $patterns);
     }
 
     /**
@@ -335,9 +290,7 @@ class Rsync
      */
     public function pruneEmptyDirs(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::PRUNE_EMPTY_DIRS);
-
-        return $this;
+        return $this->setFlag(FlagType::PRUNE_EMPTY_DIRS);
     }
 
     // ─── Backup ───────────────────────────────────────────────────
@@ -347,9 +300,7 @@ class Rsync
      */
     public function backup(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::BACKUP);
-
-        return $this;
+        return $this->setFlag(FlagType::BACKUP);
     }
 
     /**
@@ -379,9 +330,7 @@ class Rsync
      */
     public function links(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::LINKS);
     }
 
     /**
@@ -389,9 +338,7 @@ class Rsync
      */
     public function copyLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::COPY_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::COPY_LINKS);
     }
 
     /**
@@ -399,9 +346,7 @@ class Rsync
      */
     public function copyUnsafeLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::COPY_UNSAFE_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::COPY_UNSAFE_LINKS);
     }
 
     /**
@@ -409,9 +354,7 @@ class Rsync
      */
     public function safeLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::SAFE_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::SAFE_LINKS);
     }
 
     /**
@@ -419,9 +362,7 @@ class Rsync
      */
     public function hardLinks(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::HARD_LINKS);
-
-        return $this;
+        return $this->setFlag(FlagType::HARD_LINKS);
     }
 
     // ─── Size Limits ──────────────────────────────────────────────
@@ -459,9 +400,7 @@ class Rsync
      */
     public function dryRun(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DRY_RUN);
-
-        return $this;
+        return $this->setFlag(FlagType::DRY_RUN);
     }
 
     /**
@@ -469,9 +408,7 @@ class Rsync
      */
     public function force(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::FORCE);
-
-        return $this;
+        return $this->setFlag(FlagType::FORCE);
     }
 
     /**
@@ -479,9 +416,7 @@ class Rsync
      */
     public function removeSourceFiles(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::REMOVE_SOURCE_FILES);
-
-        return $this;
+        return $this->setFlag(FlagType::REMOVE_SOURCE_FILES);
     }
 
     // ─── Output ───────────────────────────────────────────────────
@@ -491,9 +426,7 @@ class Rsync
      */
     public function verbose(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::VERBOSE);
-
-        return $this;
+        return $this->setFlag(FlagType::VERBOSE);
     }
 
     /**
@@ -501,9 +434,7 @@ class Rsync
      */
     public function quiet(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::QUIET);
-
-        return $this;
+        return $this->setFlag(FlagType::QUIET);
     }
 
     /**
@@ -511,9 +442,7 @@ class Rsync
      */
     public function progress(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::PROGRESS);
-
-        return $this;
+        return $this->setFlag(FlagType::PROGRESS);
     }
 
     /**
@@ -521,9 +450,7 @@ class Rsync
      */
     public function stats(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::STATS);
-
-        return $this;
+        return $this->setFlag(FlagType::STATS);
     }
 
     /**
@@ -531,9 +458,7 @@ class Rsync
      */
     public function itemizeChanges(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::ITEMIZE_CHANGES);
-
-        return $this;
+        return $this->setFlag(FlagType::ITEMIZE_CHANGES);
     }
 
     /**
@@ -541,9 +466,7 @@ class Rsync
      */
     public function humanReadable(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::HUMAN_READABLE);
-
-        return $this;
+        return $this->setFlag(FlagType::HUMAN_READABLE);
     }
 
     // ─── Delete Modes ─────────────────────────────────────────────
@@ -553,9 +476,7 @@ class Rsync
      */
     public function deleteBefore(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE_BEFORE);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE_BEFORE);
     }
 
     /**
@@ -563,9 +484,7 @@ class Rsync
      */
     public function deleteAfter(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE_AFTER);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE_AFTER);
     }
 
     /**
@@ -573,9 +492,7 @@ class Rsync
      */
     public function deleteExcluded(): self
     {
-        $this->flags = $this->flags->addFlag(FlagType::DELETE_EXCLUDED);
-
-        return $this;
+        return $this->setFlag(FlagType::DELETE_EXCLUDED);
     }
 
     // ─── Command Generation ───────────────────────────────────────
@@ -682,7 +599,7 @@ class Rsync
         foreach ($sourceFiles as $relativePath => $sourceFile) {
             $destinationFile = $destinationFiles[$relativePath] ?? null;
 
-            if ($destinationFile !== null && ! $this->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
+            if ($destinationFile !== null && ! $this->comparator->shouldSync($sourceFile, $destinationFile, $useChecksum)) {
                 $skipped[] = $sourceFile;
                 $operation->notifySkipped($sourceFile);
 
@@ -703,7 +620,7 @@ class Rsync
 
         // Dry-run must never mutate the filesystem, so skip directory cleanup entirely.
         if (! $this->flags->contains(FlagType::DRY_RUN)) {
-            $this->cleanupEmptyDirectories();
+            $this->cleaner->cleanup($destination);
         }
 
         return new Result(
@@ -720,14 +637,17 @@ class Rsync
      */
     private function scanFiles(string $source, string $destination): array
     {
-        $allSourceFiles = $this->scanAllFiles($source);
-        ['included' => $sourceFiles, 'excluded' => $excludedFiles] = $this->filterByExclusions($allSourceFiles, $this->getEffectiveExcludes());
-        $destinationFiles = $this->scanAllFiles($destination);
+        $excludes = $this->getEffectiveExcludes();
+
+        ['included' => $sourceFiles, 'excluded' => $excludedFiles] = $this->scanner->partition(
+            $this->scanner->scan($source),
+            $excludes,
+        );
 
         return [
             'sourceFiles' => $sourceFiles,
             'excludedFiles' => $excludedFiles,
-            'destinationFiles' => $destinationFiles,
+            'destinationFiles' => $this->scanner->scan($destination),
         ];
     }
 
@@ -748,7 +668,7 @@ class Rsync
                 continue;
             }
 
-            if ($this->matchesExclusion($relativePath, $excludes)) {
+            if ($excludes !== [] && $this->matcher->matches($relativePath, $excludes)) {
                 continue;
             }
 
@@ -781,9 +701,6 @@ class Rsync
         return $this->flags->contains(FlagType::DELETE_EXCLUDED);
     }
 
-    /**
-     * Check if empty directory cleanup should be performed.
-     */
     /**
      * Get effective excludes combining skip() patterns and exclude() patterns.
      *
