@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use DiegoVasconcelos\Rsync\FileInfo;
-use DiegoVasconcelos\Rsync\Output;
+use DiegoVasconcelos\Rsync\Output\Output;
 use DiegoVasconcelos\Rsync\Rsync;
 
 beforeEach(function (): void {

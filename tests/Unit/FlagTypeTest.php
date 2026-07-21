@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\FlagType;
+use DiegoVasconcelos\Rsync\Command\FlagType;
 
 it('has 35 cases', function (): void {
     expect(FlagType::cases())->toHaveCount(35);

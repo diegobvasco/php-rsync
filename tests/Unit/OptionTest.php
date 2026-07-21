@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\Option;
+use DiegoVasconcelos\Rsync\Command\Option;
 
 it('stores option key and values correctly', function (): void {
     $option = new Option('exclude', ['*.log', 'cache/']);

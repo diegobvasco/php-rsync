@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\DirectoryCleaner;
-use DiegoVasconcelos\Rsync\InMemoryFilesystem;
-use DiegoVasconcelos\Rsync\LocalFilesystem;
+use DiegoVasconcelos\Rsync\Engine\DirectoryCleaner;
+use DiegoVasconcelos\Rsync\Filesystem\InMemoryFilesystem;
+use DiegoVasconcelos\Rsync\Filesystem\LocalFilesystem;
 
 it('cleanup is a no-op when destination is empty', function (): void {
     $cleaner = new DirectoryCleaner(new LocalFilesystem());

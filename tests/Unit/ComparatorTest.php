@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\Comparator;
+use DiegoVasconcelos\Rsync\Engine\Comparator;
 use DiegoVasconcelos\Rsync\FileInfo;
 
 beforeEach(function (): void {

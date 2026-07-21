@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync;
+namespace DiegoVasconcelos\Rsync\Engine;
 
 /**
  * @internal Matches paths against glob-style exclusion patterns.

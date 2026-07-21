@@ -4,6 +4,20 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
+use DiegoVasconcelos\Rsync\Command\FlagCollection;
+use DiegoVasconcelos\Rsync\Command\FlagType;
+use DiegoVasconcelos\Rsync\Command\Option;
+use DiegoVasconcelos\Rsync\Command\OptionCollection;
+use DiegoVasconcelos\Rsync\Engine\Comparator;
+use DiegoVasconcelos\Rsync\Engine\DirectoryCleaner;
+use DiegoVasconcelos\Rsync\Engine\DryRunSyncOperation;
+use DiegoVasconcelos\Rsync\Engine\FileScanner;
+use DiegoVasconcelos\Rsync\Engine\GlobMatcher;
+use DiegoVasconcelos\Rsync\Engine\RealSyncOperation;
+use DiegoVasconcelos\Rsync\Engine\SyncOperationInterface;
+use DiegoVasconcelos\Rsync\Filesystem\Filesystem;
+use DiegoVasconcelos\Rsync\Filesystem\LocalFilesystem;
+use DiegoVasconcelos\Rsync\Output\Output;
 use InvalidArgumentException;
 
 final class Rsync

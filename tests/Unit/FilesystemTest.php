@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\InMemoryFilesystem;
-use DiegoVasconcelos\Rsync\LocalFilesystem;
+use DiegoVasconcelos\Rsync\Filesystem\InMemoryFilesystem;
+use DiegoVasconcelos\Rsync\Filesystem\LocalFilesystem;
 
 beforeEach(function (): void {
     $this->root = str_replace('\\', '/', base_tests_dir('/filesystem_test_'.uniqid()));

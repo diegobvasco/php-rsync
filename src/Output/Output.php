@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync;
+namespace DiegoVasconcelos\Rsync\Output;
+
+use DiegoVasconcelos\Rsync\FileInfo;
 
 interface Output
 {

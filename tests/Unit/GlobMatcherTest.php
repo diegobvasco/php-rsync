@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\GlobMatcher;
+use DiegoVasconcelos\Rsync\Engine\GlobMatcher;
 
 beforeEach(function (): void {
     $this->matcher = new GlobMatcher();

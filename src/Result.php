@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
-use DiegoVasconcelos\Rsync\Concerns\ByteFormatter;
+use DiegoVasconcelos\Rsync\Support\ByteFormatter;
 
 /**
  * Immutable result of a sync operation.

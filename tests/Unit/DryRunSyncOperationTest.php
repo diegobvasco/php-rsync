@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\DryRunSyncOperation;
+use DiegoVasconcelos\Rsync\Engine\DryRunSyncOperation;
 use DiegoVasconcelos\Rsync\FileInfo;
-use DiegoVasconcelos\Rsync\Output;
+use DiegoVasconcelos\Rsync\Output\Output;
 
 it('copyFile always reports success without touching the filesystem', function (): void {
     $operation = new DryRunSyncOperation();

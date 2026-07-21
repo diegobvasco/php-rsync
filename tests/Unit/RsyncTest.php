@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\FlagType;
-use DiegoVasconcelos\Rsync\LocalFilesystem;
+use DiegoVasconcelos\Rsync\Command\FlagType;
+use DiegoVasconcelos\Rsync\Filesystem\LocalFilesystem;
 use DiegoVasconcelos\Rsync\Rsync;
 use Tests\Support\FilesystemDecorator;
 

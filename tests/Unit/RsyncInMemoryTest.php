@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use DiegoVasconcelos\Rsync\InMemoryFilesystem;
+use DiegoVasconcelos\Rsync\Filesystem\InMemoryFilesystem;
 use DiegoVasconcelos\Rsync\Rsync;
 
 it('syncs entirely in memory without touching the real filesystem', function (): void {

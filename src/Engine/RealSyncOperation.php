@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
-namespace DiegoVasconcelos\Rsync;
+namespace DiegoVasconcelos\Rsync\Engine;
 
+use DiegoVasconcelos\Rsync\FileInfo;
+use DiegoVasconcelos\Rsync\Filesystem\Filesystem;
+use DiegoVasconcelos\Rsync\Filesystem\LocalFilesystem;
+use DiegoVasconcelos\Rsync\Output\Output;
 use Override;
 
 final readonly class RealSyncOperation implements SyncOperationInterface
