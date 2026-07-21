@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.0](https://github.com/diegobvasco/php-rsync/compare/v1.3.0...v1.4.0) (2026-07-21)
+
+
+### Features
+
+* introduce FlagType native enum and refactor app to use it ([#9](https://github.com/diegobvasco/php-rsync/issues/9)) ([8503ca5](https://github.com/diegobvasco/php-rsync/commit/8503ca5cc22ff0d52348eea494e375c743c2e357))
+
+
+### Bug Fixes
+
+* dry-run FS mutation, shell escaping, type clarity and docs ([a064e1f](https://github.com/diegobvasco/php-rsync/commit/a064e1f0815bf3aa6b719f3a6b9f84db73720dfe))
+* **lint:** remove conflicting not_operator rules from pint.json ([0f5197a](https://github.com/diegobvasco/php-rsync/commit/0f5197ac72081d410379537f3a9856ad1bc98e43))
+* **test:** normalize FilesystemTest root path to forward slashes for Windows ([b1084c7](https://github.com/diegobvasco/php-rsync/commit/b1084c7e4ccedb459256b9814d48170620334317))
+* use forward-slash as canonical path separator for cross-platform support ([aee52b3](https://github.com/diegobvasco/php-rsync/commit/aee52b393dfcfacc013ed692ba7d2f7caf1df84d))
+
+
+### Performance Improvements
+
+* lazy checksum and conditional destination scan ([1fc8a62](https://github.com/diegobvasco/php-rsync/commit/1fc8a62100597e58e2acf071037b861724edc7a6))
+
+
+### Miscellaneous Chores
+
+* **tooling:** consolidate pint rules, refresh schema, declare ext-hash ([33d58e4](https://github.com/diegobvasco/php-rsync/commit/33d58e4493c12433e62367d8363d577ffc9fb440))
+
 ## [1.3.0](https://github.com/diegobvasco/php-rsync/compare/v1.2.0...v1.3.0) (2026-07-20)
 
 
