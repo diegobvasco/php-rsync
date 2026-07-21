@@ -3,29 +3,33 @@
 declare(strict_types=1);
 
 use DiegoVasconcelos\Rsync\Concerns\DirectoryCleanup;
+use DiegoVasconcelos\Rsync\Filesystem;
+use DiegoVasconcelos\Rsync\LocalFilesystem;
 
-function make_cleanup_fixture(): object
+function make_cleanup_fixture(Filesystem $fs): object
 {
-    return new class()
+    return new class($fs)
     {
         use DirectoryCleanup;
 
         public ?string $destination = null;
+
+        public function __construct(private readonly Filesystem $filesystem) {}
 
         public function exposeCleanup(): void
         {
             $this->cleanupEmptyDirectories();
         }
 
-        public function exposeIsEmptyDirectory(string $path): bool
+        protected function filesystem(): Filesystem
         {
-            return $this->isEmptyDirectory($path);
+            return $this->filesystem;
         }
     };
 }
 
 it('cleanup is a no-op when destination is unset', function (): void {
-    $fixture = make_cleanup_fixture();
+    $fixture = make_cleanup_fixture(new LocalFilesystem());
     $fixture->destination = null;
 
     $fixture->exposeCleanup(); // Expect no exception.
@@ -34,7 +38,7 @@ it('cleanup is a no-op when destination is unset', function (): void {
 });
 
 it('cleanup is a no-op when destination does not exist', function (): void {
-    $fixture = make_cleanup_fixture();
+    $fixture = make_cleanup_fixture(new LocalFilesystem());
     $fixture->destination = base_tests_dir('/does_not_exist_'.uniqid());
 
     $fixture->exposeCleanup();
@@ -42,30 +46,19 @@ it('cleanup is a no-op when destination does not exist', function (): void {
     expect(is_dir($fixture->destination))->toBeFalse();
 });
 
-it('isEmptyDirectory returns false for a non-directory path', function (): void {
-    $fixture = make_cleanup_fixture();
+it('removes empty directories through the filesystem', function (): void {
+    $fs = new LocalFilesystem();
+    $fixture = make_cleanup_fixture($fs);
 
-    $file = base_tests_dir('/dc_file_'.uniqid().'.txt');
-    file_put_contents($file, 'x');
+    $root = base_tests_dir('/dc_cleanup_'.uniqid());
+    $emptySubdir = $root.'/empty';
+    $fs->mkdir($emptySubdir);
 
-    expect($fixture->exposeIsEmptyDirectory($file))->toBeFalse()
-        ->and($fixture->exposeIsEmptyDirectory('/nonexistent/path'))->toBeFalse();
+    // The destination is $root; the empty subdir beneath it should be removed.
+    $fixture->destination = $root;
+    $fixture->exposeCleanup();
 
-    unlink($file);
-});
+    expect(is_dir($emptySubdir))->toBeFalse();
 
-it('isEmptyDirectory returns true for an empty directory and false for a non-empty one', function (): void {
-    $fixture = make_cleanup_fixture();
-
-    $empty = base_tests_dir('/dc_empty_'.uniqid());
-    $nonEmpty = base_tests_dir('/dc_nonempty_'.uniqid());
-    mkdir($empty, recursive: true);
-    mkdir($nonEmpty, recursive: true);
-    file_put_contents($nonEmpty.'/file.txt', 'x');
-
-    expect($fixture->exposeIsEmptyDirectory($empty))->toBeTrue()
-        ->and($fixture->exposeIsEmptyDirectory($nonEmpty))->toBeFalse();
-
-    rmdir($empty);
-    deleteTestDirectory($nonEmpty);
+    deleteTestDirectory($root);
 });

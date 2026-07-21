@@ -27,11 +27,22 @@ class Rsync
 
     private OptionCollection $options;
 
-    public function __construct(private ?Output $output = null)
+    private readonly Filesystem $fs;
+
+    public function __construct(private ?Output $output = null, ?Filesystem $filesystem = null)
     {
         $this->excludes = new FlagCollection();
         $this->flags = new FlagCollection();
         $this->options = new OptionCollection();
+        $this->fs = $filesystem ?? new LocalFilesystem();
+    }
+
+    /**
+     * Provide the filesystem to the composed traits.
+     */
+    protected function filesystem(): Filesystem
+    {
+        return $this->fs;
     }
 
     /**
@@ -655,7 +666,7 @@ class Rsync
 
         $operation = $this->flags->contains(FlagType::DRY_RUN)
             ? new DryRunSyncOperation()
-            : new RealSyncOperation($this->output);
+            : new RealSyncOperation($this->output, $this->fs);
 
         ['sourceFiles' => $sourceFiles, 'excludedFiles' => $excludedFiles, 'destinationFiles' => $destinationFiles] =
             $this->scanFiles($source, $destination);
@@ -802,20 +813,12 @@ class Rsync
             throw new InvalidArgumentException('Source and destination must be set using copy() method.');
         }
 
-        if (! is_dir($this->source)) {
+        if (! $this->fs->isDir($this->source)) {
             throw new InvalidArgumentException('Source directory does not exist: '.$this->source);
         }
 
-        if (! $this->isReadable($this->source)) {
+        if (! $this->fs->isReadable($this->source)) {
             throw new InvalidArgumentException('Source directory is not readable: '.$this->source);
         }
-    }
-
-    /**
-     * Check if a path is readable. Protected to allow testing on platforms where chmod doesn't work.
-     */
-    protected function isReadable(string $path): bool
-    {
-        return is_readable($path);
     }
 }

@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace DiegoVasconcelos\Rsync\Concerns;
 
 use DiegoVasconcelos\Rsync\FileInfo;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
+use DiegoVasconcelos\Rsync\Filesystem;
 
 trait FileScanner
 {
+    abstract protected function filesystem(): Filesystem;
+
     /**
      * Recursively scan a directory and return all FileInfo objects (unfiltered).
      *
@@ -18,25 +19,17 @@ trait FileScanner
     protected function scanAllFiles(string $path): array
     {
         $files = [];
+        $fs = $this->filesystem();
 
-        if (! is_dir($path)) {
-            return $files;
-        }
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS),
-        );
-
-        foreach ($iterator as $file) {
-            /** @var \SplFileInfo $file */
-            $relativePath = ltrim(substr($file->getPathname(), strlen($path)), DIRECTORY_SEPARATOR);
+        foreach ($fs->scanFiles($path) as $absolutePath) {
+            $relativePath = ltrim(substr((string) $absolutePath, strlen($path)), DIRECTORY_SEPARATOR);
 
             $files[$relativePath] = new FileInfo(
                 relativePath: $relativePath,
-                absolutePath: $file->getPathname(),
-                size: $file->getSize(),
-                mtime: $file->getMTime(),
-                checksum: hash_file('xxh128', $file->getPathname()) ?: '',
+                absolutePath: $absolutePath,
+                size: $fs->size($absolutePath),
+                mtime: $fs->mtime($absolutePath),
+                checksum: $fs->hash($absolutePath),
             );
         }
 

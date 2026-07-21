@@ -8,12 +8,26 @@ use DiegoVasconcelos\Rsync\Concerns\FileOperations;
 use DiegoVasconcelos\Rsync\Concerns\FileScanner;
 use DiegoVasconcelos\Rsync\Concerns\GlobMatcher;
 use DiegoVasconcelos\Rsync\FileInfo;
+use DiegoVasconcelos\Rsync\Filesystem;
+use DiegoVasconcelos\Rsync\LocalFilesystem;
 
 class FilesystemTestHelper
 {
     use FileOperations;
     use FileScanner;
     use GlobMatcher;
+
+    private readonly Filesystem $filesystem;
+
+    public function __construct(?Filesystem $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? new LocalFilesystem();
+    }
+
+    protected function filesystem(): Filesystem
+    {
+        return $this->filesystem;
+    }
 
     public function doScanAllFiles(string $path): array
     {

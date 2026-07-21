@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use DiegoVasconcelos\Rsync\LocalFilesystem;
 use DiegoVasconcelos\Rsync\Rsync;
+use Tests\Support\FilesystemDecorator;
 
 beforeEach(function (): void {
     $this->sourceDir = base_tests_dir('/deploy_sync_test_source_'.uniqid());
@@ -327,13 +329,15 @@ it('handles unreadable source directory', function (): void {
     $unreadableDir = $this->sourceDir.'/unreadable';
     mkdir($unreadableDir);
 
-    $rsync = new class() extends Rsync
+    $fs = new class(new LocalFilesystem()) extends FilesystemDecorator
     {
-        protected function isReadable(string $path): bool
+        public function isReadable(string $path): bool
         {
             return false;
         }
     };
+
+    $rsync = new Rsync(null, $fs);
 
     try {
         $result = $rsync

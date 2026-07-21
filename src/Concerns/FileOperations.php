@@ -5,21 +5,25 @@ declare(strict_types=1);
 namespace DiegoVasconcelos\Rsync\Concerns;
 
 use DiegoVasconcelos\Rsync\FileInfo;
+use DiegoVasconcelos\Rsync\Filesystem;
 
 trait FileOperations
 {
+    abstract protected function filesystem(): Filesystem;
+
     /**
      * Copy a single file from source to destination.
      */
     protected function copyFile(string $from, string $to): bool
     {
+        $fs = $this->filesystem();
         $directory = dirname($to);
 
-        if (! is_dir($directory)) {
-            mkdir($directory, recursive: true);
+        if (! $fs->isDir($directory)) {
+            $fs->mkdir($directory);
         }
 
-        return copy($from, $to);
+        return $fs->copy($from, $to);
     }
 
     /**
@@ -40,10 +44,12 @@ trait FileOperations
      */
     protected function deleteFile(string $path): bool
     {
-        if (! is_file($path)) {
+        $fs = $this->filesystem();
+
+        if (! $fs->isFile($path)) {
             return false;
         }
 
-        return unlink($path);
+        return $fs->deleteFile($path);
     }
 }

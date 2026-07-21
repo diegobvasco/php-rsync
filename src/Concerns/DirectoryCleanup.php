@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync\Concerns;
 
+use DiegoVasconcelos\Rsync\Filesystem;
+
 trait DirectoryCleanup
 {
+    abstract protected function filesystem(): Filesystem;
+
     /**
      * Remove empty directories from destination after sync.
      */
@@ -13,35 +17,16 @@ trait DirectoryCleanup
     {
         $destination = $this->destination ?? '';
 
-        if ($destination === '' || ! is_dir($destination)) {
+        if ($destination === '' || ! $this->filesystem()->isDir($destination)) {
             return;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($destination, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST,
-        );
+        $fs = $this->filesystem();
 
-        foreach ($iterator as $item) {
-            /** @var \SplFileInfo $item */
-            if ($item->isDir() && $this->isEmptyDirectory($item->getPathname())) {
-                rmdir($item->getPathname());
+        foreach ($fs->scanEntriesDeepFirst($destination) as $entry) {
+            if ($fs->isDir($entry) && $fs->isEmptyDirectory($entry)) {
+                $fs->removeDir($entry);
             }
         }
-    }
-
-    /**
-     * Check if a directory is empty.
-     */
-    protected function isEmptyDirectory(string $path): bool
-    {
-        if (! is_dir($path)) {
-            return false;
-        }
-
-        /** @var list<string>|false $entries */
-        $entries = scandir($path);
-
-        return $entries !== false && count($entries) === 2; // Only . and ..
     }
 }
