@@ -11,9 +11,7 @@ trait ByteFormatter
     /** @var list<string> */
     private const array UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
-    /**
-     * Format bytes to human readable size.
-     */
+    /** Format bytes to human readable size. */
     public static function formatBytes(int $bytes): string
     {
         $value = (float) $bytes;

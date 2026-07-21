@@ -42,16 +42,14 @@ final readonly class FileScanner
     {
         $absolutePath = $basePath.DIRECTORY_SEPARATOR.$relativePath;
 
-        if (! $this->filesystem->isFile($absolutePath)) {
+        if ( ! $this->filesystem->isFile($absolutePath)) {
             return null;
         }
 
         return $this->buildFileInfo($relativePath, $absolutePath);
     }
 
-    /**
-     * Build a FileInfo with a lazily-resolved checksum.
-     */
+    /** Build a FileInfo with a lazily-resolved checksum. */
     private function buildFileInfo(string $relativePath, string $absolutePath): FileInfo
     {
         $fs = $this->filesystem;

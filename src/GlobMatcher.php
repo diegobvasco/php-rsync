@@ -15,9 +15,7 @@ final class GlobMatcher
     /** @var array<string, string> Cached compiled regexes, keyed by pattern. */
     private static array $regexCache = [];
 
-    /**
-     * Clear the compiled-pattern cache (primarily useful for tests).
-     */
+    /** Clear the compiled-pattern cache (primarily useful for tests). */
     public static function clearCache(): void
     {
         self::$regexCache = [];
@@ -58,17 +56,13 @@ final class GlobMatcher
         return false;
     }
 
-    /**
-     * Match a string against a glob pattern using regex.
-     */
+    /** Match a string against a glob pattern using regex. */
     public function globMatch(string $pattern, string $subject): bool
     {
         return preg_match($this->globToRegex($pattern), $subject) === 1;
     }
 
-    /**
-     * Convert a glob pattern to a regex pattern (memoized).
-     */
+    /** Convert a glob pattern to a regex pattern (memoized). */
     public function globToRegex(string $pattern): string
     {
         return self::$regexCache[$pattern] ??= $this->compile($pattern);

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
+use BadMethodCallException;
 use DiegoVasconcelos\Rsync\Support\AbstractCollection;
 use JsonSerializable;
+use Override;
 use Stringable;
 
 /**
@@ -17,8 +19,8 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
 {
     public function add(mixed $item): static
     {
-        if (! $item instanceof FlagType) {
-            throw new \BadMethodCallException('FlagCollection only accepts FlagType cases.');
+        if ( ! $item instanceof FlagType) {
+            throw new BadMethodCallException('FlagCollection only accepts FlagType cases.');
         }
 
         // Deduplicate by enum case identity.
@@ -31,9 +33,7 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
         return new self([...$this->items, $item]);
     }
 
-    /**
-     * Convenience alias of add() with a typed parameter.
-     */
+    /** Convenience alias of add() with a typed parameter. */
     public function addFlag(FlagType $flag): static
     {
         return $this->add($flag);
@@ -46,7 +46,7 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
         foreach ($collection as $flag) {
             $found = array_any($items, fn (FlagType $existing): bool => $existing === $flag);
 
-            if (! $found) {
+            if ( ! $found) {
                 $items[] = $flag;
             }
         }
@@ -66,9 +66,7 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
         return new self($filtered);
     }
 
-    /**
-     * @param  callable(FlagType, int): bool  $callback
-     */
+    /** @param  callable(FlagType, int): bool  $callback */
     public function filter(callable $callback): static
     {
         /** @var array<int, FlagType> $filtered */
@@ -110,24 +108,20 @@ final readonly class FlagCollection extends AbstractCollection implements JsonSe
         ));
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function toArray(): array
     {
         return $this->names();
     }
 
-    #[\Override]
+    #[Override]
     public function __toString(): string
     {
         return implode(' ', $this->names());
     }
 
-    /**
-     * @return list<string>
-     */
-    #[\Override]
+    /** @return list<string> */
+    #[Override]
     public function jsonSerialize(): array
     {
         return $this->names();

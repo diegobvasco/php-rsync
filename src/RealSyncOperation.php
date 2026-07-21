@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
+use Override;
+
 final readonly class RealSyncOperation implements SyncOperationInterface
 {
     public function __construct(
@@ -11,44 +13,44 @@ final readonly class RealSyncOperation implements SyncOperationInterface
         private Filesystem $filesystem = new LocalFilesystem(),
     ) {}
 
-    #[\Override]
+    #[Override]
     public function copyFile(string $from, string $to): bool
     {
         $fs = $this->filesystem;
         $directory = dirname($to);
 
-        if (! $fs->isDir($directory)) {
+        if ( ! $fs->isDir($directory)) {
             $fs->mkdir($directory);
         }
 
         return $fs->copy($from, $to);
     }
 
-    #[\Override]
+    #[Override]
     public function deleteFile(string $path): bool
     {
         $fs = $this->filesystem;
 
-        if (! $fs->isFile($path)) {
+        if ( ! $fs->isFile($path)) {
             return false;
         }
 
         return $fs->deleteFile($path);
     }
 
-    #[\Override]
+    #[Override]
     public function notifyCopied(FileInfo $file): void
     {
         $this->output?->copied($file);
     }
 
-    #[\Override]
+    #[Override]
     public function notifyDeleted(FileInfo $file): void
     {
         $this->output?->deleted($file);
     }
 
-    #[\Override]
+    #[Override]
     public function notifySkipped(FileInfo $file): void
     {
         $this->output?->skipped($file);

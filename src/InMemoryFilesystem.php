@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
+use Override;
+
 /**
  * In-memory Filesystem implementation for tests and dry-run scenarios.
  *
@@ -17,18 +19,14 @@ final class InMemoryFilesystem implements Filesystem
     /** @var array<string, array{content: string, mtime: int}> */
     private array $files = [];
 
-    /**
-     * Seed a file with contents and (optionally) a modification time.
-     */
+    /** Seed a file with contents and (optionally) a modification time. */
     public function put(string $path, string $content, ?int $mtime = null): void
     {
         $path = $this->normalize($path);
         $this->files[$path] = ['content' => $content, 'mtime' => $mtime ?? time()];
     }
 
-    /**
-     * Override the modification time of an existing file.
-     */
+    /** Override the modification time of an existing file. */
     public function setMtime(string $path, int $mtime): void
     {
         $path = $this->normalize($path);
@@ -43,7 +41,7 @@ final class InMemoryFilesystem implements Filesystem
         return rtrim(str_replace('\\', '/', $path), '/');
     }
 
-    #[\Override]
+    #[Override]
     public function exists(string $path): bool
     {
         $path = $this->normalize($path);
@@ -51,13 +49,13 @@ final class InMemoryFilesystem implements Filesystem
         return isset($this->files[$path]) || $this->isDir($path);
     }
 
-    #[\Override]
+    #[Override]
     public function isFile(string $path): bool
     {
         return isset($this->files[$this->normalize($path)]);
     }
 
-    #[\Override]
+    #[Override]
     public function isDir(string $path): bool
     {
         $path = $this->normalize($path);
@@ -71,25 +69,25 @@ final class InMemoryFilesystem implements Filesystem
         return array_any(array_keys($this->files), fn (string $file): bool => str_starts_with($file, $prefix));
     }
 
-    #[\Override]
+    #[Override]
     public function isReadable(string $path): bool
     {
         return $this->exists($path);
     }
 
-    #[\Override]
+    #[Override]
     public function mkdir(string $path): void
     {
         // Directories are implicit; nothing to do.
     }
 
-    #[\Override]
+    #[Override]
     public function copy(string $from, string $to): bool
     {
         $from = $this->normalize($from);
         $to = $this->normalize($to);
 
-        if (! isset($this->files[$from])) {
+        if ( ! isset($this->files[$from])) {
             return false;
         }
 
@@ -98,12 +96,12 @@ final class InMemoryFilesystem implements Filesystem
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function deleteFile(string $path): bool
     {
         $path = $this->normalize($path);
 
-        if (! isset($this->files[$path])) {
+        if ( ! isset($this->files[$path])) {
             return false;
         }
 
@@ -112,12 +110,12 @@ final class InMemoryFilesystem implements Filesystem
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function removeDir(string $path): bool
     {
         $path = $this->normalize($path);
 
-        if (! $this->isDir($path)) {
+        if ( ! $this->isDir($path)) {
             return false;
         }
 
@@ -132,7 +130,7 @@ final class InMemoryFilesystem implements Filesystem
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function size(string $path): int
     {
         $path = $this->normalize($path);
@@ -140,7 +138,7 @@ final class InMemoryFilesystem implements Filesystem
         return isset($this->files[$path]) ? strlen($this->files[$path]['content']) : 0;
     }
 
-    #[\Override]
+    #[Override]
     public function mtime(string $path): int
     {
         $path = $this->normalize($path);
@@ -148,7 +146,7 @@ final class InMemoryFilesystem implements Filesystem
         return $this->files[$path]['mtime'] ?? 0;
     }
 
-    #[\Override]
+    #[Override]
     public function hash(string $path): string
     {
         $path = $this->normalize($path);
@@ -156,7 +154,7 @@ final class InMemoryFilesystem implements Filesystem
         return isset($this->files[$path]) ? hash('xxh128', $this->files[$path]['content']) : '';
     }
 
-    #[\Override]
+    #[Override]
     public function isEmptyDirectory(string $path): bool
     {
         // Directories are implicit, so a directory only exists while it has
@@ -164,7 +162,7 @@ final class InMemoryFilesystem implements Filesystem
         return false;
     }
 
-    #[\Override]
+    #[Override]
     public function scanFiles(string $path): iterable
     {
         $path = $this->normalize($path);
@@ -185,7 +183,7 @@ final class InMemoryFilesystem implements Filesystem
         }
     }
 
-    #[\Override]
+    #[Override]
     public function scanEntriesDeepFirst(string $path): iterable
     {
         $path = $this->normalize($path);
@@ -195,7 +193,7 @@ final class InMemoryFilesystem implements Filesystem
         $dirs = [];
 
         foreach (array_keys($this->files) as $file) {
-            if (! str_starts_with($file, $prefix)) {
+            if ( ! str_starts_with($file, $prefix)) {
                 continue;
             }
 

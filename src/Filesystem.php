@@ -32,9 +32,7 @@ interface Filesystem
 
     public function mtime(string $path): int;
 
-    /**
-     * Compute the xxh128 hash of a file's contents.
-     */
+    /** Compute the xxh128 hash of a file's contents. */
     public function hash(string $path): string;
 
     public function isEmptyDirectory(string $path): bool;

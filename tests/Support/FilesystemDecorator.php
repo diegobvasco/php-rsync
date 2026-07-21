@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Support;
 
 use DiegoVasconcelos\Rsync\Filesystem;
+use Override;
 
 /**
  * Transparent forwarding decorator for the Filesystem interface.
@@ -18,85 +19,85 @@ class FilesystemDecorator implements Filesystem
         private readonly Filesystem $inner,
     ) {}
 
-    #[\Override]
+    #[Override]
     public function exists(string $path): bool
     {
         return $this->inner->exists($path);
     }
 
-    #[\Override]
+    #[Override]
     public function isFile(string $path): bool
     {
         return $this->inner->isFile($path);
     }
 
-    #[\Override]
+    #[Override]
     public function isDir(string $path): bool
     {
         return $this->inner->isDir($path);
     }
 
-    #[\Override]
+    #[Override]
     public function isReadable(string $path): bool
     {
         return $this->inner->isReadable($path);
     }
 
-    #[\Override]
+    #[Override]
     public function mkdir(string $path): void
     {
         $this->inner->mkdir($path);
     }
 
-    #[\Override]
+    #[Override]
     public function copy(string $from, string $to): bool
     {
         return $this->inner->copy($from, $to);
     }
 
-    #[\Override]
+    #[Override]
     public function deleteFile(string $path): bool
     {
         return $this->inner->deleteFile($path);
     }
 
-    #[\Override]
+    #[Override]
     public function removeDir(string $path): bool
     {
         return $this->inner->removeDir($path);
     }
 
-    #[\Override]
+    #[Override]
     public function size(string $path): int
     {
         return $this->inner->size($path);
     }
 
-    #[\Override]
+    #[Override]
     public function mtime(string $path): int
     {
         return $this->inner->mtime($path);
     }
 
-    #[\Override]
+    #[Override]
     public function hash(string $path): string
     {
         return $this->inner->hash($path);
     }
 
-    #[\Override]
+    #[Override]
     public function isEmptyDirectory(string $path): bool
     {
         return $this->inner->isEmptyDirectory($path);
     }
 
-    #[\Override]
+    #[Override]
     public function scanFiles(string $path): iterable
     {
         return $this->inner->scanFiles($path);
     }
 
-    #[\Override]
+    #[Override]
     public function scanEntriesDeepFirst(string $path): iterable
     {
         return $this->inner->scanEntriesDeepFirst($path);

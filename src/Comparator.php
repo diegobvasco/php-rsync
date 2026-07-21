@@ -10,9 +10,7 @@ namespace DiegoVasconcelos\Rsync;
  */
 final class Comparator
 {
-    /**
-     * Return true when the source file must be (re)copied.
-     */
+    /** Return true when the source file must be (re)copied. */
     public function shouldSync(FileInfo $source, FileInfo $destination, bool $useChecksum = false): bool
     {
         if ($useChecksum) {

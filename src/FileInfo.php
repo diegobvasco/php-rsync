@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DiegoVasconcelos\Rsync;
 
+use Closure;
 use DiegoVasconcelos\Rsync\Concerns\ByteFormatter;
 
 /**
@@ -20,37 +21,29 @@ final class FileInfo
     /** @var string|null Memoized checksum, null until first resolution. */
     private ?string $resolvedChecksum = null;
 
-    /**
-     * @param  (\Closure(): string)|null  $checksumProvider  Deferred checksum computation; null resolves to ''.
-     */
+    /** @param  (Closure(): string)|null  $checksumProvider  Deferred checksum computation; null resolves to ''. */
     public function __construct(
         public readonly string $relativePath,
         public readonly string $absolutePath,
         public readonly int $size,
         public readonly int $mtime,
-        private readonly ?\Closure $checksumProvider = null,
+        private readonly ?Closure $checksumProvider = null,
     ) {}
 
-    /**
-     * Content checksum (xxh128), resolved on first access and cached.
-     */
+    /** Content checksum (xxh128), resolved on first access and cached. */
     public string $checksum {
-        get => $this->resolvedChecksum ??= $this->checksumProvider instanceof \Closure
+        get => $this->resolvedChecksum ??= $this->checksumProvider instanceof Closure
             ? ($this->checksumProvider)()
             : '';
     }
 
-    /**
-     * Format file size in human readable format.
-     */
+    /** Format file size in human readable format. */
     public function formattedSize(): string
     {
         return self::formatBytes($this->size);
     }
 
-    /**
-     * Format modification time as ISO 8601.
-     */
+    /** Format modification time as ISO 8601. */
     public function formattedMtime(): string
     {
         return date('c', $this->mtime);

@@ -24,33 +24,25 @@ final readonly class Result
         public array $skipped = [],
     ) {}
 
-    /**
-     * Get total number of copied files.
-     */
+    /** Get total number of copied files. */
     public function copiedCount(): int
     {
         return count($this->copied);
     }
 
-    /**
-     * Get total number of deleted files.
-     */
+    /** Get total number of deleted files. */
     public function deletedCount(): int
     {
         return count($this->deleted);
     }
 
-    /**
-     * Get total number of skipped files.
-     */
+    /** Get total number of skipped files. */
     public function skippedCount(): int
     {
         return count($this->skipped);
     }
 
-    /**
-     * Get total bytes copied.
-     */
+    /** Get total bytes copied. */
     public function totalBytesCopied(): int
     {
         return array_reduce(
@@ -60,9 +52,7 @@ final readonly class Result
         );
     }
 
-    /**
-     * Get total bytes deleted.
-     */
+    /** Get total bytes deleted. */
     public function totalBytesDeleted(): int
     {
         return array_reduce(
@@ -72,9 +62,7 @@ final readonly class Result
         );
     }
 
-    /**
-     * Generate human-readable summary.
-     */
+    /** Generate human-readable summary. */
     public function summary(): string
     {
         $parts = [];
@@ -86,9 +74,7 @@ final readonly class Result
         return implode("\n", $parts);
     }
 
-    /**
-     * Return "file" or "files" based on the count.
-     */
+    /** Return "file" or "files" based on the count. */
     private function pluralizeFile(int $count): string
     {
         return $count === 1 ? 'file' : 'files';
