@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DiegoVasconcelos\Rsync\FlagType;
 use DiegoVasconcelos\Rsync\LocalFilesystem;
 use DiegoVasconcelos\Rsync\Rsync;
 use Tests\Support\FilesystemDecorator;
@@ -1134,8 +1135,8 @@ it('getFlags returns the flags collection', function (): void {
     $flags = $rsync->getFlags();
 
     expect($flags->count())->toBe(2)
-        ->and($flags->contains('--delete'))->toBeTrue()
-        ->and($flags->contains('--recursive'))->toBeTrue();
+        ->and($flags->contains(FlagType::DELETE))->toBeTrue()
+        ->and($flags->contains(FlagType::RECURSIVE))->toBeTrue();
 });
 
 it('getOptions returns the options collection', function (): void {
@@ -1148,11 +1149,19 @@ it('getOptions returns the options collection', function (): void {
         ->and($options->has('exclude'))->toBeTrue();
 });
 
-it('getExcludes returns the excludes collection', function (): void {
+it('getExcludes returns the excludes patterns', function (): void {
     $rsync = new Rsync();
     $excludes = $rsync->getExcludes();
 
-    expect($excludes->count())->toBe(0);
+    expect($excludes)->toBe([])
+        ->and(count($excludes))->toBe(0);
+});
+
+it('getExcludes returns skip patterns', function (): void {
+    $rsync = new Rsync();
+    $rsync->skip('*.log');
+
+    expect($rsync->getExcludes())->toBe(['*.log']);
 });
 
 it('exclude called twice merges patterns', function (): void {

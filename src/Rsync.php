@@ -21,7 +21,8 @@ class Rsync
 
     private ?string $destination = null;
 
-    private FlagCollection $excludes;
+    /** @var list<string> */
+    private array $excludes = [];
 
     private FlagCollection $flags;
 
@@ -31,7 +32,6 @@ class Rsync
 
     public function __construct(private ?Output $output = null, ?Filesystem $filesystem = null)
     {
-        $this->excludes = new FlagCollection();
         $this->flags = new FlagCollection();
         $this->options = new OptionCollection();
         $this->fs = $filesystem ?? new LocalFilesystem();
@@ -66,7 +66,7 @@ class Rsync
         $patterns = (array) $patterns;
 
         foreach ($patterns as $pattern) {
-            $this->excludes = $this->excludes->add(new Flag($pattern));
+            $this->excludes = [...$this->excludes, $pattern];
         }
 
         return $this;
@@ -588,7 +588,7 @@ class Rsync
         $parts = ['rsync'];
 
         foreach ($this->flags as $flag) {
-            $parts[] = $flag->name;
+            $parts[] = $flag->value;
         }
 
         foreach ($this->options as $option) {
@@ -621,7 +621,7 @@ class Rsync
     {
         $this->flags = new FlagCollection();
         $this->options = new OptionCollection();
-        $this->excludes = new FlagCollection();
+        $this->excludes = [];
         $this->source = null;
         $this->destination = null;
 
@@ -645,9 +645,11 @@ class Rsync
     }
 
     /**
-     * Get the excludes collection.
+     * Get the exclude patterns added via skip().
+     *
+     * @return list<string>
      */
-    public function getExcludes(): FlagCollection
+    public function getExcludes(): array
     {
         return $this->excludes;
     }
@@ -789,7 +791,7 @@ class Rsync
      */
     private function getEffectiveExcludes(): array
     {
-        $excludes = $this->excludes->toArray();
+        $excludes = $this->excludes;
 
         if ($this->options->has('exclude')) {
             $excludes = array_values(array_merge($excludes, $this->options->get('exclude')->values));

@@ -6,36 +6,24 @@ namespace DiegoVasconcelos\Rsync;
 
 use DiegoVasconcelos\Rsync\Concerns\AbstractCollection;
 use JsonSerializable;
+use Stringable;
 
 /**
- * Immutable collection of Flag objects.
+ * Immutable collection of FlagType cases.
  *
- * @extends AbstractCollection<Flag>
+ * @extends AbstractCollection<FlagType>
  */
-final readonly class FlagCollection extends AbstractCollection implements \Stringable, JsonSerializable
+final readonly class FlagCollection extends AbstractCollection implements JsonSerializable, Stringable
 {
-    /**
-     * Create a new FlagCollection from an array of flag names.
-     *
-     * @param  list<string>  $names
-     */
-    public static function fromArray(array $names): static
-    {
-        return new self(array_map(
-            static fn (string $name): Flag => Flag::tryFromValue($name) ?? new Flag($name),
-            $names,
-        ));
-    }
-
     public function add(mixed $item): static
     {
-        if (! $item instanceof Flag) {
-            throw new \BadMethodCallException('FlagCollection only accepts Flag objects.');
+        if (! $item instanceof FlagType) {
+            throw new \BadMethodCallException('FlagCollection only accepts FlagType cases.');
         }
 
-        // Deduplicate by name
+        // Deduplicate by enum case identity.
         foreach ($this->items as $existing) {
-            if ($existing->name === $item->name) {
+            if ($existing === $item) {
                 return $this;
             }
         }
@@ -43,12 +31,11 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
         return new self([...$this->items, $item]);
     }
 
-    public function addFlag(FlagType|string $name): static
+    /**
+     * Convenience alias of add() with a typed parameter.
+     */
+    public function addFlag(FlagType $flag): static
     {
-        $flag = $name instanceof FlagType
-            ? Flag::fromType($name)
-            : Flag::tryFromValue($name) ?? new Flag($name);
-
         return $this->add($flag);
     }
 
@@ -57,35 +44,34 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
         $items = $this->items;
 
         foreach ($collection as $flag) {
-            $found = array_any($items, fn (Flag $existing): bool => $existing->name === $flag->name);
+            $found = array_any($items, fn (FlagType $existing): bool => $existing === $flag);
+
             if (! $found) {
                 $items[] = $flag;
             }
         }
 
-        /** @var array<int, Flag> $items */
+        /** @var array<int, FlagType> $items */
         return new self($items);
     }
 
-    public function remove(FlagType|string $name): static
+    public function remove(FlagType $flag): static
     {
-        $value = $name instanceof FlagType ? $name->value : $name;
-
-        /** @var array<int, Flag> $filtered */
+        /** @var array<int, FlagType> $filtered */
         $filtered = array_values(array_filter(
             $this->items,
-            static fn (Flag $flag): bool => $flag->name !== $value,
+            static fn (FlagType $current): bool => $current !== $flag,
         ));
 
         return new self($filtered);
     }
 
     /**
-     * @param  callable(Flag, int): bool  $callback
+     * @param  callable(FlagType, int): bool  $callback
      */
     public function filter(callable $callback): static
     {
-        /** @var array<int, Flag> $filtered */
+        /** @var array<int, FlagType> $filtered */
         $filtered = array_values(array_filter(
             $this->items,
             $callback,
@@ -98,7 +84,7 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
     /**
      * @template T
      *
-     * @param  callable(Flag, int): T  $callback
+     * @param  callable(FlagType, int): T  $callback
      * @return list<T>
      */
     public function map(callable $callback): array
@@ -106,22 +92,20 @@ final readonly class FlagCollection extends AbstractCollection implements \Strin
         return array_map($callback, $this->items, array_keys($this->items));
     }
 
-    public function contains(FlagType|string $name): bool
+    public function contains(FlagType $flag): bool
     {
-        $value = $name instanceof FlagType ? $name->value : $name;
-
-        return array_any($this->items, fn (Flag $item): bool => $item->name === $value);
+        return array_any($this->items, fn (FlagType $current): bool => $current === $flag);
     }
 
     /**
-     * Get all flag names as strings.
+     * Get all flag values as strings (e.g. ['--delete', '--recursive']).
      *
      * @return list<string>
      */
     public function names(): array
     {
         return array_values(array_map(
-            static fn (Flag $flag): string => $flag->name,
+            static fn (FlagType $flag): string => $flag->value,
             $this->items,
         ));
     }
