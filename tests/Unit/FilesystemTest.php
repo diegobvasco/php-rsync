@@ -6,7 +6,7 @@ use DiegoVasconcelos\Rsync\InMemoryFilesystem;
 use DiegoVasconcelos\Rsync\LocalFilesystem;
 
 beforeEach(function (): void {
-    $this->root = base_tests_dir('/filesystem_test_'.uniqid());
+    $this->root = str_replace('\\', '/', base_tests_dir('/filesystem_test_'.uniqid()));
     mkdir($this->root, recursive: true);
 });
 
