@@ -23,9 +23,10 @@ final readonly class FileScanner
     public function scan(string $path): array
     {
         $files = [];
+        $base = rtrim(str_replace('\\', '/', $path), '/');
 
         foreach ($this->filesystem->scanFiles($path) as $absolutePath) {
-            $relativePath = ltrim(substr($absolutePath, strlen($path)), DIRECTORY_SEPARATOR);
+            $relativePath = ltrim(substr(str_replace('\\', '/', $absolutePath), strlen($base)), '/');
             $files[$relativePath] = $this->buildFileInfo($relativePath, $absolutePath);
         }
 
@@ -40,7 +41,7 @@ final readonly class FileScanner
      */
     public function fileAt(string $basePath, string $relativePath): ?FileInfo
     {
-        $absolutePath = $basePath.DIRECTORY_SEPARATOR.$relativePath;
+        $absolutePath = rtrim($basePath, '/\\').'/'.$relativePath;
 
         if (! $this->filesystem->isFile($absolutePath)) {
             return null;

@@ -43,8 +43,8 @@ final class Rsync
     /** Set the source and destination directories. */
     public function copy(string $source, string $destination): self
     {
-        $this->source = rtrim($source, DIRECTORY_SEPARATOR);
-        $this->destination = rtrim($destination, DIRECTORY_SEPARATOR);
+        $this->source = rtrim($source, '/\\');
+        $this->destination = rtrim($destination, '/\\');
 
         return $this;
     }
@@ -520,7 +520,7 @@ final class Rsync
                 continue;
             }
 
-            $destPath = $destination.DIRECTORY_SEPARATOR.$relativePath;
+            $destPath = $destination.'/'.$relativePath;
 
             if ($operation->copyFile($sourceFile->absolutePath, $destPath)) {
                 $copied[] = $sourceFile;

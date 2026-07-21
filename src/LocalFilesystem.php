@@ -114,7 +114,7 @@ final class LocalFilesystem implements Filesystem
         foreach ($iterator as $file) {
             /** @var SplFileInfo $file */
             if ($file->isFile()) {
-                yield $file->getPathname();
+                yield str_replace('\\', '/', $file->getPathname());
             }
         }
     }
@@ -133,7 +133,7 @@ final class LocalFilesystem implements Filesystem
 
         foreach ($iterator as $item) {
             /** @var SplFileInfo $item */
-            yield $item->getPathname();
+            yield str_replace('\\', '/', $item->getPathname());
         }
     }
 }
